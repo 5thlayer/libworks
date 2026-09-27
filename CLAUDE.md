@@ -16,7 +16,7 @@ Conventional commits: `<type>(<optional scope>): <summary>`, with the summary in
 
 `sh ./gradlew build` runs the JUnit tests, on a plain JVM with no Minecraft. `sh ./gradlew runGameTestServer` runs the game tests headless, a real player on a real server, and names each one it ran; it fails if it ran none. A new game test class is registered by a line in `ExampleLibGameTests.registerTests`, and its tests stand on the `gametest/platform` structure that `scripts/build-gametest-structures.py` writes. CI (`.github/workflows/ci.yml`) runs both on every push and never publishes.
 
-`scripts/quicklaunch.sh [save]` opens the dev client into the most recent save, one client at a time.
+The `skillworks:quicklaunch` skill opens the dev client into the most recent save in `run/saves`, one client per checkout.
 
 ## Releases
 

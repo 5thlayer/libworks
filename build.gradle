@@ -33,7 +33,7 @@ neoForge {
         client {
             client()
             programArguments.addAll '--username', 'Developer', '--uuid', '123456781234123412341234567890ab'
-            // -PquickPlay=<save> opens that save straight from launch (scripts/quicklaunch.sh).
+            // -PquickPlay=<save> opens that save straight from launch (the skillworks:quicklaunch skill).
             programArguments.addAll providers.gradleProperty('quickPlay').map { ['--quickPlaySingleplayer', it] }.orElse([])
         }
         // Runs the Library's game tests headless and exits, non-zero if any fails. 26.1 has no

@@ -9,7 +9,7 @@ libworks holds no runtime code, and no Library depends on it. What it holds is c
 - A ModDevGradle build on Java 25 and NeoForge 26.1.2, published to `~/.m2` only.
 - A GameTest harness: `runGameTestServer` runs the Library's game tests headless and fails if it ran none. `scripts/build-gametest-structures.py` writes the stone platform they stand on.
 - JUnit tests on a plain JVM, with no Minecraft.
-- `scripts/release.sh`, which releases a version to `~/.m2` and tags it; a published version never changes. `scripts/quicklaunch.sh`, which opens the dev client.
+- `scripts/release.sh`, which releases a version to `~/.m2` and tags it; a published version never changes. The `skillworks:quicklaunch` skill opens the dev client into the most recent save in `run/saves`, one client per checkout.
 - CI on every push: the build, the JUnit tests, the game tests, and a REUSE lint. It never publishes.
 - MIT under REUSE, `CLAUDE.md`, a `CONTEXT.md` stub, `docs/agents/`, conventional commits.
 - ADR 0001, the versioning rule every Library inherits: below 1.0 an addition bumps the patch.
