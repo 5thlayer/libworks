@@ -1,0 +1,123 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'net.neoforged.moddev' version '2.0.147'
+}
+
+group = maven_group
+version = mod_version
+base.archivesName = archives_name
+
+java {
+    withSourcesJar()
+    toolchain.languageVersion = JavaLanguageVersion.of(25)
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 25
+}
+
+// The Minecraft version goes in the jar's name and not in the Library's version:
+// examplelib-26.1.2-0.1.0.jar.
+tasks.withType(Jar).configureEach {
+    archiveVersion = "$minecraft_version-$mod_version"
+}
+
+def gameTestReport = layout.buildDirectory.file('reports/gametest.xml').get().asFile
+
+neoForge {
+    version = neoforge_version
+
+    runs {
+        // The same player every launch, so a dev save keeps its inventory and position.
+        client {
+            client()
+            programArguments.addAll '--username', 'Developer', '--uuid', '123456781234123412341234567890ab'
+            // -PquickPlay=<save> opens that save straight from launch (scripts/quicklaunch.sh).
+            programArguments.addAll providers.gradleProperty('quickPlay').map { ['--quickPlaySingleplayer', it] }.orElse([])
+        }
+        // Runs the Library's game tests headless and exits, non-zero if any fails. 26.1 has no
+        // namespace property, so the selector is what keeps vanilla's tests out.
+        // A directory of its own, so nothing the dev client loads or saves reaches it.
+        gameTestServer {
+            type = 'gameTestServer'
+            gameDirectory = project.file('run/gametest')
+            programArguments.addAll '--tests', "${mod_id}:*", '--report', gameTestReport.absolutePath
+        }
+    }
+
+    mods {
+        "$mod_id" {
+            sourceSet sourceSets.main
+        }
+    }
+}
+
+// The server says only how many tests passed, so the report is read back to name them: a green
+// run that didn't run a test is no evidence for it. The report, not the exit code, decides, so a
+// failing run still names its tests; a server that crashes writes no report and fails here too.
+// The server writes the report but not its folder, which a clean checkout has yet to make.
+tasks.named('runGameTestServer') {
+    ignoreExitValue = true
+    doFirst {
+        gameTestReport.delete()
+        gameTestReport.parentFile.mkdirs()
+    }
+    doLast {
+        if (!gameTestReport.exists()) throw new GradleException("The game test server wrote no report at $gameTestReport")
+        def cases = new groovy.xml.XmlSlurper().parse(gameTestReport).'**'.findAll { it.name() == 'testcase' }
+        if (cases.isEmpty()) throw new GradleException('The game test server ran no tests')
+        cases.each { logger.lifecycle("${it.failure.size() ? 'FAILED' : 'passed'}  ${it.@name}") }
+        def failed = cases.count { it.failure.size() }
+        if (failed) throw new GradleException("$failed of ${cases.size()} game tests failed")
+    }
+}
+
+dependencies {
+    testImplementation platform('org.junit:junit-bom:5.10.2')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+// The JUnit tests run on a plain JVM, with no Minecraft on their classpath: they test the rules
+// that read no game state, and the game tests test the rest. A Library whose rules need game types
+// adds `addModdingDependenciesTo sourceSets.test` to the neoForge block.
+test {
+    useJUnitPlatform()
+}
+
+// neoforge.mods.toml names nothing of its own: it is filled from gradle.properties.
+def modProperties = [
+        mod_id: mod_id, mod_name: mod_name, mod_description: mod_description, version: mod_version,
+        minecraft_version: minecraft_version, neoforge_version: neoforge_version,
+]
+processResources {
+    inputs.properties modProperties
+    filesMatching('META-INF/neoforge.mods.toml') {
+        expand modProperties
+    }
+}
+
+// Maven local only, which is where a Consumer's development build and the Pack's pin read the
+// Library's jar (release-train). Nothing here publishes anywhere else.
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifactId = base.archivesName.get()
+            from components.java
+        }
+    }
+}
+
+// A version in the local maven repository never changes: Consumers resolve it by version and the
+// Pack pins its sha256, so a fix is the next patch version (docs/agents/releases.md). Gradle's own
+// mavenLocal() says where that is, and it's removed again so nothing resolves from it.
+tasks.withType(PublishToMavenLocal).configureEach {
+    def local = repositories.mavenLocal()
+    repositories.remove(local)
+    def published = new File(local.url.path, "${maven_group.replace('.', '/')}/$archives_name/$mod_version")
+    doFirst {
+        if (published.exists()) throw new GradleException(
+                "$mod_name $mod_version is already in $published, and a published version never changes: bump mod_version")
+    }
+}
