@@ -25,7 +25,7 @@ A release that must reach another Library or the Pack follows the `release-train
 
 `scripts/upload.py <version>` uploads a version already in `~/.m2` to each site whose project `gradle.properties` names: the jar there, byte for byte, with that version's changelog section as its notes, for Minecraft `minecraft_version` on NeoForge, on client and server, as beta below 1.0.
 
-- `modrinth_project_id` and `curseforge_project_id` are the projects. A new Library leaves them empty until its projects exist on the sites, and never borrows another mod's; `MODRINTH_PROJECT_ID` and `CURSEFORGE_PROJECT_ID` override them. With neither set, the script refuses and `scripts/release.sh` skips the upload.
+- `modrinth_project_id` and `curseforge_project_id` are the projects. A new Library leaves them empty until its projects exist on the sites (creating them: `docs/agents/publishing.md`), and never borrows another mod's; `MODRINTH_PROJECT_ID` and `CURSEFORGE_PROJECT_ID` override them. With neither set, the script refuses and `scripts/release.sh` skips the upload.
 - `modrinth_dependencies` (Modrinth project ids) and `curseforge_dependencies` (CurseForge slugs) are the required dependencies, comma separated.
 
 Each site's token comes from the environment and is never printed. The tokens live in 1Password, and `publish/upload.env` names them there; when a token is missing the upload runs itself again through `op run --env-file=publish/upload.env`, which fills them in for that run only. So `scripts/release.sh <version>` and `scripts/upload.py <version>` need nothing exported; 1Password asks to be unlocked. A token belongs to the account, not a project, so every Library uses Beltworks' items:
