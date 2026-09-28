@@ -20,13 +20,13 @@ Conventional commits: `<type>(<optional scope>): <summary>`, with the summary in
 
 ## Testing
 
-`sh ./gradlew build` runs the JUnit tests, on a plain JVM with no Minecraft. `sh ./gradlew runGameTestServer` runs the game tests headless, a real player on a real server, and names each one it ran; it fails if it ran none. A new game test class is registered by a line in `ExampleLibGameTests.registerTests`, and its tests stand on the `gametest/platform` structure that `scripts/build-gametest-structures.py` writes. CI (`.github/workflows/ci.yml`) runs both on every push and never publishes.
+`sh ./gradlew build` runs the JUnit tests, on a plain JVM with no Minecraft. `sh ./gradlew runGameTestServer` runs the game tests headless, a real player on a real server, and names each one it ran; it fails if it ran none. `python3 -m unittest discover scripts/tests` tests the upload step against a stand-in server on localhost. A new game test class is registered by a line in `ExampleLibGameTests.registerTests`, and its tests stand on the `gametest/platform` structure that `scripts/build-gametest-structures.py` writes. CI (`.github/workflows/ci.yml`) runs all three on every push and never publishes.
 
 The `skillworks:quicklaunch` skill opens the dev client into the most recent save in `run/saves`, one client per checkout.
 
 ## Releases
 
-A change a Consumer can use or will notice adds its line under `## Unreleased` in `CHANGELOG.md` as it lands. Before bumping `mod_version`, publishing to `~/.m2` or tagging a release, read `docs/agents/releases.md`: releases go through `scripts/release.sh`, and a published version never changes. ADR 0001, inherited from 5thlayer/libworks, sets the version bumps.
+A change a Consumer can use or will notice adds its line under `## Unreleased` in `CHANGELOG.md` as it lands. Before bumping `mod_version`, publishing to `~/.m2`, tagging a release or uploading to Modrinth or CurseForge, read `docs/agents/releases.md`: releases go through `scripts/release.sh`, which uploads last with `scripts/upload.py` when `gradle.properties` names a project, and a published version never changes, in `~/.m2` or on either site. ADR 0001, inherited from 5thlayer/libworks, sets the version bumps.
 
 A release that must reach another Library or the Pack follows the `release-train` skill: one owning session per checkout, and pushes only on the user's word.
 
