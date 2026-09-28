@@ -48,6 +48,7 @@ modrinth_project_id = examplelib-properties
 curseforge_project_id = 654321
 modrinth_dependencies = fRiHVvU7, P7dR8mSH
 curseforge_dependencies = emi,fabric-api
+upload_release_type =
 """
 
 
@@ -304,6 +305,41 @@ exec "$@"
         self.assertEqual(self.upload("1.0.0").returncode, 0)
         self.assertEqual(json.loads(self.modrinth_post().parts()["data"][0])["version_type"], "release")
         self.assertEqual(json.loads(self.curseforge_post().parts()["metadata"][0])["releaseType"], "release")
+
+    def test_a_gradle_properties_without_upload_release_type_keeps_the_default(self):
+        (self.root / "gradle.properties").write_text(PROPERTIES.replace("upload_release_type =\n", ""))
+        self.publish("0.3.9")
+        self.assertEqual(self.upload("0.3.9").returncode, 0)
+        self.assertEqual(json.loads(self.modrinth_post().parts()["data"][0])["version_type"], "beta")
+        self.assertEqual(json.loads(self.curseforge_post().parts()["metadata"][0])["releaseType"], "beta")
+
+    def test_upload_release_type_sets_the_type_on_both_sites(self):
+        (self.root / "CHANGELOG.md").write_text(CHANGELOG + "\n## 1.0.0\n\n- Stable.\n")
+        self.publish("0.3.9")
+        self.publish("1.0.0")
+        for kind in ["release", "beta", "alpha"]:
+            for version in ["0.3.9", "1.0.0"]:
+                with self.subTest(kind, version=version):
+                    self.site.requests.clear()
+                    self.site.modrinth.clear()
+                    self.site.curseforge.clear()
+                    self.properties(upload_release_type=kind)
+                    self.assertEqual(self.upload(version).returncode, 0)
+                    self.assertEqual(json.loads(self.modrinth_post().parts()["data"][0])["version_type"], kind)
+                    self.assertEqual(json.loads(self.curseforge_post().parts()["metadata"][0])["releaseType"], kind)
+
+    def test_a_dry_run_shows_the_upload_release_type(self):
+        self.properties(upload_release_type="release")
+        self.publish("0.3.9")
+        result = self.upload("--dry-run", "0.3.9")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('"version_type": "release"', result.stdout)
+        self.assertIn('"releaseType": "release"', result.stdout)
+
+    def test_refuses_an_unknown_upload_release_type(self):
+        self.properties(upload_release_type="stable")
+        self.publish("0.3.9")
+        self.assertRefusedBeforeAnyRequest(self.upload("0.3.9"), "upload_release_type")
 
     def test_refuses_a_version_modrinth_already_has(self):
         self.publish("0.3.9")

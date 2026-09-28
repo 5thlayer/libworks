@@ -23,7 +23,7 @@ A release that must reach another Library or the Pack follows the `release-train
 
 ## Uploading to Modrinth and CurseForge
 
-`scripts/upload.py <version>` uploads a version already in `~/.m2` to each site whose project `gradle.properties` names: the jar there, byte for byte, with that version's changelog section as its notes, for Minecraft `minecraft_version` on NeoForge, on client and server, as beta below 1.0.
+`scripts/upload.py <version>` uploads a version already in `~/.m2` to each site whose project `gradle.properties` names: the jar there, byte for byte, with that version's changelog section as its notes, for Minecraft `minecraft_version` on NeoForge, on client and server, as the release type `upload_release_type` names (`release`, `beta` or `alpha`) or, left empty, as beta below 1.0 and release from it. An unknown type is refused before either site is contacted, and `--dry-run` shows the type it would send.
 
 - `modrinth_project_id` and `curseforge_project_id` are the projects. A new Library leaves them empty until its projects exist on the sites (creating them: `docs/agents/publishing.md`), and never borrows another mod's; `MODRINTH_PROJECT_ID` and `CURSEFORGE_PROJECT_ID` override them. With neither set, the script refuses and `scripts/release.sh` skips the upload.
 - `modrinth_dependencies` (Modrinth project ids) and `curseforge_dependencies` (CurseForge slugs) are the required dependencies, comma separated.
