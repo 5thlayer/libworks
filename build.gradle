@@ -86,6 +86,24 @@ test {
     useJUnitPlatform()
 }
 
+// The jar is what players are handed, so it carries the MIT licence the Library is under.
+def jarLicensing = ['LICENSE', 'LICENSES/MIT.txt']
+tasks.named('jar', Jar) {
+    from(rootDir) { include jarLicensing }
+}
+
+// Fails the build when the jar lost its licensing.
+def checkJarLicensing = tasks.register('checkJarLicensing') {
+    def jarFile = tasks.named('jar', Jar).flatMap { it.archiveFile }
+    inputs.file jarFile
+    doLast {
+        def names = new java.util.zip.ZipFile(jarFile.get().asFile).withCloseable { zip -> zip.entries()*.name as Set }
+        def missing = jarLicensing.findAll { !names.contains(it) }
+        if (missing) throw new GradleException("${jarFile.get().asFile.name} lacks its licensing: ${missing.join(', ')}")
+    }
+}
+tasks.named('check') { dependsOn checkJarLicensing }
+
 // neoforge.mods.toml names nothing of its own: it is filled from gradle.properties.
 def modProperties = [
         mod_id: mod_id, mod_name: mod_name, mod_description: mod_description, version: mod_version,

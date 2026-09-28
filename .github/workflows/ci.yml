@@ -1,5 +1,5 @@
 # Builds and tests every push. It never publishes: a Library's jar reaches the Pack only through
-# ~/.m2 on a maintainer's machine (docs/agents/releases.md).
+# ~/.m2, and Modrinth and CurseForge, only from a maintainer's machine (docs/agents/releases.md).
 name: CI
 
 on:
@@ -39,6 +39,13 @@ jobs:
             build/reports/tests/
             run/gametest/logs/
           if-no-files-found: ignore
+
+  # The upload step's tests, against a stand-in server on localhost. They contact no site.
+  scripts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: python3 -m unittest discover scripts/tests
 
   reuse:
     runs-on: ubuntu-latest
