@@ -1,6 +1,6 @@
 # Creating the Modrinth and CurseForge projects
 
-A Library goes to Modrinth and CurseForge only once its projects exist there. Creating them is done by hand, once, on each site's website; after that, `scripts/release.sh` uploads every release (`docs/agents/releases.md`). A Library that never goes to the sites, like Groundworks, skips this page.
+A Library goes to Modrinth and CurseForge only once its projects exist there. Creating them is done by hand, once, on each site's website; after that, `scripts/release.sh` uploads every release (`docs/agents/releases.md`). A Library that never goes to the sites skips this page.
 
 The sources were read on 2026-09-28. The sites change their forms, so check the linked page when a field here no longer matches.
 
@@ -35,6 +35,7 @@ Create a project from the Modrinth website. The API's create-project call lists 
 - **Links**: issues, source, wiki, Discord and donation URLs, all optional. Every link must lead to a public, relevant page ([§5.4](https://modrinth.com/legal/rules)).
 - **Icon**: PNG, JPG, BMP, GIF, WebP or SVG.
 - **Gallery**: optional images, relevant and not misleading ([§5.5](https://modrinth.com/legal/rules)).
+- **Contains AI-generated content**: a flag the project must carry when a substantial part of its code is AI output, when it has assets mainly made by AI, when its design or function relies on generative AI, or when its page (the description, say) relies on it ([§6.1](https://modrinth.com/legal/rules)). A Library written with Claude sets it. §6.2 also keeps a project that is "primarily or entirely a product of AI output" from public publication.
 
 Environments (client and server) are no longer project settings: they belong to each version and carry over from the previous one ([Streamlined version creation](https://modrinth.com/news/article/streamlined-version-creation/)). `scripts/upload.py` names none on Modrinth, so the first version's environments are set on the website when it is uploaded by hand, or checked there after the first upload.
 
