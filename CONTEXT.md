@@ -12,5 +12,5 @@ The Library's terms, each with what it is and the words to avoid. `/domain-model
 This Library.
 
 **Consumer**:
-A mod that builds against this Library: the PlanetaryFactory Pack, or another Library.
+A mod that builds against this Library: the FactoryWorks Pack, or another Library.
 _Avoid_: client (collides with the game's client side), dependent, integration

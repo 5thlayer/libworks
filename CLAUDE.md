@@ -1,11 +1,11 @@
 # Example Library
 
-A 5thlayer Library: a mod the PlanetaryFactory Pack consumes as a pinned local jar. See `CONTEXT.md` for the domain glossary.
+A 5thlayer Library: a mod the FactoryWorks Pack consumes as a pinned local jar. See `CONTEXT.md` for the domain glossary.
 
 <!-- template-only: extract-library removes this section -->
 ## This checkout is the template
 
-libworks is the template every 5thlayer Library starts from (planetary-factory ADR-0090), not a Library itself. `Example Library` and `examplelib` are placeholders; leave them. A change here lands in future Libraries only; existing ones pick it up by hand. Work comes from drift across Libraries (#1), so an empty tracker is normal.
+libworks is the template every 5thlayer Library starts from (FactoryWorks ADR-0090), not a Library itself. `Example Library` and `examplelib` are placeholders; leave them. A change here lands in future Libraries only; existing ones pick it up by hand. Work comes from drift across Libraries (#1), so an empty tracker is normal.
 <!-- /template-only -->
 
 ## Workflow

@@ -1,6 +1,6 @@
 # libworks
 
-The GitHub template every 5thlayer Library starts from (planetary-factory ADR-0090). A Library is a 5thlayer mod the PlanetaryFactory Pack consumes as a pinned local jar.
+The GitHub template every 5thlayer Library starts from (FactoryWorks ADR-0090). A Library is a 5thlayer mod the FactoryWorks Pack consumes as a pinned local jar.
 
 libworks holds no runtime code, and no Library depends on it. What it holds is copied: a NeoForge mod named `examplelib` that builds, passes its own tests, and does nothing else.
 
