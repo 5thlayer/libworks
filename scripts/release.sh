@@ -4,11 +4,12 @@
 #
 # Release the Library at <version> from HEAD: the changelog's Unreleased entries become <version>'s,
 # the build and game tests pass, and the jar is published to the local maven repository, tagged,
-# and uploaded to Modrinth and CurseForge by scripts/upload.py, when gradle.properties names a project.
+# and, with --upload, uploaded to Modrinth and CurseForge by scripts/upload.py, when gradle.properties names a project.
 #
-#   scripts/release.sh [--no-upload] <version>
+#   scripts/release.sh [--upload] <version>
 #
-# --no-upload stops after the tag, for a release train that uploads once the user says to push.
+# It stops after the tag and prints the upload command, since an upload is public and for good and
+# waits on the user's word; --upload uploads too. Flags may come in any position.
 #
 # It commits and tags but pushes nothing to git. The rules it keeps are in docs/agents/releases.md.
 # $MAVEN_REPO_LOCAL publishes somewhere other than ~/.m2/repository, to try the script out, and
@@ -25,10 +26,16 @@ group="$(property maven_group)"
 artifact="$(property archives_name)"
 [[ -n "$name" && -n "$group" && -n "$artifact" ]] || fail "gradle.properties must name mod_name, maven_group and archives_name."
 
-upload_now=1
-if [[ "${1:-}" == --no-upload ]]; then upload_now=; shift; fi
-version="${1:-}"
-[[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || fail "usage: scripts/release.sh [--no-upload] <major.minor.patch>"
+usage="usage: scripts/release.sh [--upload] <major.minor.patch>"
+upload_now= version=
+for arg in "$@"; do
+    case "$arg" in
+        --upload) upload_now=1 ;;
+        -*) fail "unknown flag $arg; $usage" ;;
+        *) [[ -z "$version" ]] || fail "a second version, $arg; $usage"; version="$arg" ;;
+    esac
+done
+[[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || fail "$usage"
 tag="v$version"
 repo="${MAVEN_REPO_LOCAL:-$HOME/.m2/repository}"
 published="$repo/${group//.//}/$artifact/$version"
