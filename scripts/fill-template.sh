@@ -45,7 +45,7 @@ fi
 
 git rm -q scripts/fill-template.sh
 echo "Filled the template as $id ($class, \"$name\"). Next:"
-echo "  - write CONTEXT.md's first terms and README.md's pitch"
+echo "  - write GLOSSARY.md's first terms and README.md's pitch"
 echo "  - if the Library goes to Modrinth and CurseForge, set its projects and dependencies in gradle.properties"
 echo "  - sh ./gradlew build runGameTestServer"
 echo "  - commit: chore: fill the libworks template"
