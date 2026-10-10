@@ -8,6 +8,7 @@ path = [
     "**/*.gradle",
     "**/gradle.properties",
     ".gitignore",
+    ".gitmodules",
     "**/*.mods.toml",
     "scripts/*.py",
     "scripts/*.sh",
