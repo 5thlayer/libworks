@@ -13,8 +13,9 @@ path = [
     "scripts/*.py",
     "scripts/*.sh",
     "**/*.md",
-    "src/main/resources/**/*.json",
-    "src/main/resources/**/*.nbt",
+    "**/src/main/resources/**/*.json",
+    "**/src/gametest/resources/**/*.nbt",
+    "**/src/main/resources/**/*.nbt",
     "LICENSE",
     ".github/**",
 ]

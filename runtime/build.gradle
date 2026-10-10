@@ -17,11 +17,53 @@ tasks.withType(JavaCompile).configureEach {
     options.release = 25
 }
 
-// Compiles against NeoForge and bundles none of it. No `mods` and no runs: the jar is a library
-// that other Modules nest, never a mod of its own (ADR-0128).
+sourceSets {
+    // The game test lives beside the jar, not in it.
+    gametest {
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += sourceSets.main.output
+    }
+}
+
+def gameTestReport = layout.buildDirectory.file('reports/gametest.xml').get().asFile
+
+// A mod of its own, nested by Modules. NeoForge is compile-only here: FML provides it.
 neoForge {
     version = neoforge_version
     addModdingDependenciesTo sourceSets.test
+    addModdingDependenciesTo sourceSets.gametest
+
+    runs {
+        gameTestServer {
+            type = 'gameTestServer'
+            gameDirectory = project.file('run/gametest')
+            programArguments.addAll '--tests', 'libworks:*', '--report', gameTestReport.absolutePath
+        }
+    }
+
+    mods {
+        libworks {
+            sourceSet sourceSets.main
+            sourceSet sourceSets.gametest
+        }
+    }
+}
+
+// Same report check as the template's: a run that ran no test is not a pass.
+tasks.named('runGameTestServer') {
+    ignoreExitValue = true
+    doFirst {
+        gameTestReport.delete()
+        gameTestReport.parentFile.mkdirs()
+    }
+    doLast {
+        if (!gameTestReport.exists()) throw new GradleException("The game test server wrote no report at $gameTestReport")
+        def cases = new groovy.xml.XmlSlurper().parse(gameTestReport).'**'.findAll { it.name() == 'testcase' }
+        if (cases.isEmpty()) throw new GradleException('The game test server ran no tests')
+        cases.each { logger.lifecycle("${it.failure.size() ? 'FAILED' : 'passed'}  ${it.@name}") }
+        def failed = cases.count { it.failure.size() }
+        if (failed) throw new GradleException("$failed of ${cases.size()} game tests failed")
+    }
 }
 
 dependencies {
@@ -34,15 +76,21 @@ test {
     useJUnitPlatform()
 }
 
-// FMLModType LIBRARY makes the jar loadable as a nested library; the automatic module name is what
-// FML names it by. Two Modules nesting different versions resolve to the highest in range.
+// A mod, not a library: no FMLModType. Two Modules nesting different versions resolve to the
+// highest in range, and FML loads that copy once.
 tasks.named('jar', Jar) {
-    manifest.attributes(
-            'FMLModType': 'LIBRARY',
-            'Automatic-Module-Name': 'io.github._5thlayer.libworks.runtime',
-            'Implementation-Version': runtime_version,
-    )
+    manifest.attributes('Implementation-Version': runtime_version)
     from(rootDir) { include 'LICENSE', 'LICENSES/MIT.txt' }
+}
+
+processResources {
+    def props = [
+            version: runtime_version, minecraft_version: minecraft_version, neoforge_version: neoforge_version,
+    ]
+    inputs.properties props
+    filesMatching('META-INF/neoforge.mods.toml') {
+        expand props
+    }
 }
 
 publishing {

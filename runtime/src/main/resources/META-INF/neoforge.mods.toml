@@ -1,0 +1,28 @@
+modLoader = "javafml"
+loaderVersion = "[4,)"
+issueTrackerURL = "https://github.com/5thlayer/libworks/issues"
+license = "MIT"
+
+# processResources fills each dollar-brace value; version is runtime_version.
+[[mods]]
+modId = "libworks"
+version = "${version}"
+displayName = "libworks"
+authors = "5thlayer"
+description = '''
+The code the 5thlayer Modules share: the Works creative tab and the transfer helpers. Nested inside each Module.
+'''
+
+[[dependencies.libworks]]
+modId = "neoforge"
+type = "required"
+versionRange = "[${neoforge_version},)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.libworks]]
+modId = "minecraft"
+type = "required"
+versionRange = "[${minecraft_version}]"
+ordering = "NONE"
+side = "BOTH"

@@ -2,7 +2,7 @@
 
 The GitHub template every 5thlayer Library starts from (FactoryWorks ADR-0090). A Library is a 5thlayer mod the FactoryWorks Pack consumes as a pinned local jar.
 
-libworks is becoming a dependency (ADR-0128, #8). Its first part is `runtime/`, a jar Modules nest (`docs/runtime.md`). The template below is still copied: a NeoForge mod named `examplelib` that builds, passes its own tests, and does nothing else.
+libworks is becoming a dependency (ADR-0128, #8). Its first part is `runtime/`, a small mod (id `libworks`) Modules nest: the shared "Works" creative tab and transfer helpers (`docs/runtime.md`). The template below is still copied: a NeoForge mod named `examplelib` that builds, passes its own tests, and does nothing else.
 
 ## What a Library gets
 
