@@ -1,12 +1,8 @@
-# Project exclude paths
-/.gradle/
-/build/
-/run/
-/runtime/run/
-/runtime/build/
-/runtime/logs/
-/runtime/.gradle/
+# Project exclude paths, at any depth so a subproject's output is covered too
+.gradle/
+build/
+run/
+logs/
 /.idea/
 .DS_Store
-/logs/
 __pycache__/
