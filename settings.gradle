@@ -10,3 +10,6 @@ plugins {
 }
 
 rootProject.name = 'examplelib'
+
+// The runtime jar other Modules nest (ADR-0128); fill-template.sh removes it from a Module.
+include 'runtime'

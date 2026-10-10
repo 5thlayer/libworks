@@ -1,0 +1,55 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'net.neoforged.moddev'
+}
+
+group = maven_group
+version = runtime_version
+base.archivesName = 'libworks-runtime'
+
+java {
+    withSourcesJar()
+    toolchain.languageVersion = JavaLanguageVersion.of(25)
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 25
+}
+
+// Compiles against NeoForge and bundles none of it. No `mods` and no runs: the jar is a library
+// that other Modules nest, never a mod of its own (ADR-0128).
+neoForge {
+    version = neoforge_version
+    addModdingDependenciesTo sourceSets.test
+}
+
+dependencies {
+    testImplementation platform('org.junit:junit-bom:5.10.2')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+// FMLModType LIBRARY makes the jar loadable as a nested library; the automatic module name is what
+// FML names it by. Two Modules nesting different versions resolve to the highest in range.
+tasks.named('jar', Jar) {
+    manifest.attributes(
+            'FMLModType': 'LIBRARY',
+            'Automatic-Module-Name': 'io.github._5thlayer.libworks.runtime',
+            'Implementation-Version': runtime_version,
+    )
+    from(rootDir) { include 'LICENSE', 'LICENSES/MIT.txt' }
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifactId = base.archivesName.get()
+            from components.java
+        }
+    }
+}

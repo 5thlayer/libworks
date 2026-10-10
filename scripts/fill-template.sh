@@ -25,6 +25,11 @@ description="${4:-}"
 [[ -n "$name" ]] || fail "the display name is missing."
 [[ -e src/main/java/io/github/_5thlayer/examplelib ]] || fail "no examplelib package here: the template is already filled."
 
+# The runtime jar belongs to libworks, not to a Library (ADR-0128).
+git rm -rq runtime
+sed -i.bak -e '/^\/\/ The runtime jar/d' -e "/^include 'runtime'/d" settings.gradle
+rm settings.gradle.bak
+
 package="io/github/_5thlayer"
 git mv "src/main/java/$package/examplelib" "src/main/java/$package/$id"
 git mv "src/test/java/$package/examplelib" "src/test/java/$package/$id"
