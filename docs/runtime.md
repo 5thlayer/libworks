@@ -41,7 +41,14 @@ A Module adds its items in one block, in the order it wants them. The order betw
 
 ## Releasing it
 
-The runtime has its own version, `runtime_version` in `runtime/gradle.properties`, apart from the template's `mod_version`. `sh ./gradlew :runtime:publishToMavenLocal` publishes it to `~/.m2`. A published version never changes, so a fix is the next patch. `scripts/release.sh` is the template's and does not release it.
+The runtime has its own version, `runtime_version` in `runtime/gradle.properties`, apart from the template's `mod_version`, and its own release path: `scripts/release.sh` is the template's and does not release it, and `release-train` does not cover libworks. From a clean main:
+
+1. set `runtime_version`, the bump ADR 0001 sets, and commit `chore(runtime): release <version>`
+2. `sh ./gradlew build runGameTestServer`
+3. `sh ./gradlew :runtime:publishToMavenLocal`, which refuses a version already in `~/.m2`: a published version never changes, so a fix is the next patch
+4. tag `runtime-v<version>`, annotated with the jar's sha256, as the Libraries' `v<version>` tags are: `git tag -a runtime-v<version> -m "libworks-runtime <version>" -m "sha256 $(sha256sum ~/.m2/repository/io/github/5thlayer/libworks-runtime/<version>/libworks-runtime-<version>.jar | cut -d' ' -f1)"`
+
+Nothing is pushed or uploaded without the user's word. `git tag -l 'runtime-v*' -n9` lists the releases.
 
 The runtime's own game test (`sh ./gradlew :runtime:runGameTestServer`, also run by the root's `runGameTestServer`) lives in `runtime/src/gametest`, outside the jar, and checks the tab is registered.
 

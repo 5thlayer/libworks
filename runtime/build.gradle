@@ -101,3 +101,14 @@ publishing {
         }
     }
 }
+
+// As the root's: a version in the local maven repository never changes, so a fix is the next patch.
+tasks.withType(PublishToMavenLocal).configureEach {
+    def local = repositories.mavenLocal()
+    repositories.remove(local)
+    def published = new File(local.url.path, "${maven_group.replace('.', '/')}/${base.archivesName.get()}/$runtime_version")
+    doFirst {
+        if (published.exists()) throw new GradleException(
+                "libworks-runtime $runtime_version is already in $published, and a published version never changes: bump runtime_version")
+    }
+}
