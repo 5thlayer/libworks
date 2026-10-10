@@ -43,6 +43,10 @@ if [[ -n "$description" ]]; then
     rm gradle.properties.bak
 fi
 
+# CLAUDE.md's template-only section tells an agent the checkout is the template, which a Library is not.
+perl -0pi -e 's/\n<!-- template-only:.*?<!-- \/template-only -->\n//s' CLAUDE.md
+! grep -q template-only CLAUDE.md || fail "CLAUDE.md still has its template-only section."
+
 git rm -q scripts/fill-template.sh
 echo "Filled the template as $id ($class, \"$name\"). Next:"
 echo "  - write GLOSSARY.md's first terms and README.md's pitch"
