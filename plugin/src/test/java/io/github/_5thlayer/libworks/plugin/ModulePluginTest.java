@@ -98,6 +98,21 @@ class ModulePluginTest {
                 "implementation io.github.5thlayer:groundworks strictly=[0.5.4,0.6) prefer=0.5.4"));
     }
 
+    private String processedModsToml() throws IOException {
+        build("processResources");
+        return Files.readString(module.resolve("build/resources/main/META-INF/neoforge.mods.toml"));
+    }
+
+    @Test
+    void expandsEachUpstreamsRangeInTheModsToml() throws IOException {
+        Path toml = Files.createDirectories(module.resolve("src/main/resources/META-INF")).resolve("neoforge.mods.toml");
+        Files.writeString(toml, "versionRange = \"${groundworks_range}\"\n");
+        buildScript("upstream('groundworks') { range = '[0.5.4,0.6)' }");
+        assertEquals("versionRange = \"[0.5.4,0.6)\"\n", processedModsToml());
+        buildScript("upstream('groundworks') { range = '[0.5.5,0.6)' }");
+        assertEquals("versionRange = \"[0.5.5,0.6)\"\n", processedModsToml());
+    }
+
     @Test
     void refusesARangeWithoutAnInclusiveLowerBound() throws IOException {
         buildScript("upstream('groundworks') { range = '(0.5.4,0.6)' }");

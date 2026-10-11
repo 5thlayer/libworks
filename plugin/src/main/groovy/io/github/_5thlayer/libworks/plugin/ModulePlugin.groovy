@@ -40,7 +40,7 @@ class ModulePlugin implements Plugin<Project> {
         configureNeoForge(project, property)
         configureTests(project)
         configureLicensing(project)
-        configureResources(project, property)
+        configureResources(project, property, libworks)
         configurePublishing(project, property, mavenLocal)
         configureUpstreams(project, libworks)
         configureScripts(project, libworks)
@@ -126,14 +126,17 @@ class ModulePlugin implements Plugin<Project> {
     }
 
     /** neoforge.mods.toml names nothing of its own: it is filled from gradle.properties. */
-    private static void configureResources(Project project, Closure<String> property) {
+    /** The mods.toml also names each upstream's range as {@code ${<name>_range}}, read once the libworks block has run. */
+    private static void configureResources(Project project, Closure<String> property, LibworksExtension libworks) {
         def props = [
                 mod_id: property('mod_id'), mod_name: property('mod_name'), mod_description: property('mod_description'), version: property('mod_version'),
                 minecraft_version: property('minecraft_version'), neoforge_version: property('neoforge_version'),
         ]
         project.tasks.named('processResources') {
+            def ranges = { libworks.upstreams.collectEntries { ["${it.name}_range".toString(), it.range] } }
             inputs.properties props
-            filesMatching('META-INF/neoforge.mods.toml') { expand props }
+            inputs.property 'upstreamRanges', project.provider { ranges() }
+            filesMatching('META-INF/neoforge.mods.toml') { expand props + ranges() }
         }
     }
 
