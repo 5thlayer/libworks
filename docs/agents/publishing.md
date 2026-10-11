@@ -12,7 +12,7 @@ Most answers are in the repo. Keep them the same on both sites and in the repo: 
 |---|---|
 | Name | `mod_name` in `gradle.properties`, and nothing else: no version, no "mod", no game name |
 | Summary | `mod_description` in `gradle.properties`: one sentence on what the Library does |
-| Description | `README.md`'s pitch, rewritten for players and pack authors: what it adds, and what they need to know before downloading |
+| Description | `README.md`'s opening section for players, which the maintainer writes and no agent does: what the Library is, why it exists and how it feels to play. Modrinth, CurseForge and the README say the same thing |
 | Licence | MIT (`LICENSE`), SPDX id `MIT`; a Library that carries other licences (Beltworks' CC-BY-4.0 assets) names them in the description |
 | Source and issues links | `https://github.com/5thlayer/<repo>` and its `/issues` |
 | Loader, game version | NeoForge and `minecraft_version`; each upload sets them per version |

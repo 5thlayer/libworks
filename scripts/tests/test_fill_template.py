@@ -120,6 +120,13 @@ class FillTemplate(unittest.TestCase):
         self.assertNotIn("template", readme.lower())
         self.assertNotIn("Starting a Library", readme)
 
+    def test_the_readme_opens_with_a_placeholder_for_the_maintainer_s_section_for_players(self):
+        readme = self.text("README.md")
+        title, _, rest = readme.partition("\n\n")
+        self.assertEqual("# Craftworks", title)
+        self.assertTrue(rest.startswith("<!-- For players"), readme)
+        self.assertIn("docs/agents/publishing.md", rest.split("-->")[0])
+
     def test_build_gradle_is_the_template_s_less_its_own_build_of_the_plugin(self):
         build = self.text("build.gradle")
         self.assertNotIn("plugin/", build)

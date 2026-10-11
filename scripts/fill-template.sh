@@ -84,10 +84,17 @@ if [[ -n "$description" ]]; then
 fi
 
 # The changelog's entries and the README are libworks' own: the Module starts with an empty
-# Unreleased section and a README stub of its name and description.
+# Unreleased section and a README stub of its name, the place for the maintainer's section for
+# players (5thlayer/factoryworks#672), and its description.
 sed -i.bak '/^## Unreleased$/q' CHANGELOG.md
 rm CHANGELOG.md.bak
-{ printf '# %s\n' "$name"; [[ -z "$description" ]] || printf '\n%s\n' "$description"; } > README.md
+{
+    printf '# %s\n\n' "$name"
+    printf '<!-- For players, written by the maintainer and never by an agent: what %s is, why it exists\n' "$name"
+    printf 'and how it feels to play. It is also the Modrinth and CurseForge description\n'
+    printf '(docs/agents/publishing.md). The technical sections go below it. -->\n'
+    [[ -z "$description" ]] || printf '\n%s\n' "$description"
+} > README.md
 
 # CLAUDE.md's template-only section tells an agent the checkout is the template, which a Library is not.
 perl -0pi -e 's/\n<!-- template-only:.*?<!-- \/template-only -->\n//s' CLAUDE.md
@@ -95,7 +102,7 @@ perl -0pi -e 's/\n<!-- template-only:.*?<!-- \/template-only -->\n//s' CLAUDE.md
 
 git rm -q scripts/fill-template.sh
 echo "Filled the template as $id ($class, \"$name\"). Next:"
-echo "  - write GLOSSARY.md's first terms and README.md's pitch, from its stub"
+echo "  - write GLOSSARY.md's first terms, and README.md's technical sections below the maintainer's section for players"
 echo "  - if the Library goes to Modrinth and CurseForge, set its projects and dependencies in gradle.properties"
 echo "  - sh ./gradlew build runGameTestServer"
 echo "  - commit: chore: fill the libworks template"

@@ -19,7 +19,7 @@ libworks is becoming a dependency (ADR-0128, #8). It carries `runtime/`, a small
 
 1. Create the repo from this template: `gh repo create 5thlayer/<mod_id> --template 5thlayer/libworks --public --clone`, then `git submodule update --init` so the links in `.claude/skills/` resolve.
 2. Fill the placeholders: `scripts/fill-template.sh <mod_id> <ClassName> "<Display Name>" "<description>"`. It renames the package and every `examplelib`, `ExampleLib` and `Example Library`, removes `plugin/`, `runtime/` and the tooling's tests, pins the plugin and `module-ci.yml` to the released plugin version, and deletes itself. The plugin must be in `~/.m2` (`docs/plugin.md`).
-3. Replace this README with the Library's own, write `GLOSSARY.md`'s first terms, and run `sh ./gradlew build runGameTestServer`.
+3. Write the README's technical sections below the placeholder `fill-template.sh` leaves for the maintainer's section for players, which is the maintainer's to write and the marketplace description (`docs/agents/publishing.md`). Write `GLOSSARY.md`'s first terms, and run `sh ./gradlew build runGameTestServer`.
 
 ## Adopting it in an existing Library
 
