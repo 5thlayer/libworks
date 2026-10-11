@@ -142,7 +142,7 @@ public final class GhostGameTests {
                 helper.fail("the ingredient's ghost should be 3 coal, got " + members);
             }
             var ghosts = new Ghosts();
-            ghosts.add(20, 30, () -> members);
+            ghosts.add(20, 30, () -> members); // corner 0: screen coordinates
             List<Ghost> shown = ghosts.shown(0);
             if (shown.size() != 1 || shown.getFirst().stack().getCount() != 3 || shown.getFirst().x() != 20) {
                 helper.fail("the registered ghost should show 3 coal at x 20, got " + shown);
@@ -174,9 +174,15 @@ public final class GhostGameTests {
             if (ghosts.shown(0).getFirst().x() != 207) {
                 helper.fail("the ghost should follow the screen when its corner moves");
             }
+            ghosts.add(3, 4, () -> List.of(new ItemStack(Items.COAL)));
+            corner[1] = 70;
+            Ghost icon = ghosts.shown(0).getLast();
+            if (icon.x() != 203 || icon.y() != 74) {
+                helper.fail("a position not in a slot should stand from the corner too, got " + icon);
+            }
             container.setItem(0, new ItemStack(Items.COAL));
-            if (!ghosts.shown(0).isEmpty() || ghosts.at(210, 60, 0).isPresent()) {
-                helper.fail("a slot holding an item should show no ghost");
+            if (ghosts.shown(0).size() != 1 || ghosts.at(222, 94, 0).isPresent()) {
+                helper.fail("a slot holding an item should show no ghost, only the icon");
             }
         }
     }

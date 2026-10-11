@@ -40,7 +40,7 @@ public final class Ghosts {
     private final IntSupplier top;
     private final List<Position> positions = new ArrayList<>();
 
-    /** For a screen whose slots are already in screen coordinates, or one that registers only {@link #add(int, int, Supplier)}. */
+    /** For a screen whose positions are already in screen coordinates: the corner is 0. */
     public Ghosts() {
         this(() -> 0, () -> 0);
     }
@@ -55,9 +55,13 @@ public final class Ghosts {
         this.top = top;
     }
 
-    /** Registers a ghost standing at ({@code x}, {@code y}) in screen coordinates, always shown while it has a candidate. */
+    /**
+     * Registers a ghost standing at ({@code x}, {@code y}) from the panel's corner, like a slot's, so it
+     * follows the screen on resize. It is always shown while it has a candidate. With the corner at 0
+     * these are screen coordinates.
+     */
     public void add(int x, int y, Supplier<List<ItemStack>> candidates) {
-        positions.add(new Position(() -> x, () -> y, () -> true, candidates));
+        positions.add(new Position(() -> left.getAsInt() + x, () -> top.getAsInt() + y, () -> true, candidates));
     }
 
     /**

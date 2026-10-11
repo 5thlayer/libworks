@@ -52,9 +52,9 @@ private final Ghosts ghosts = new Ghosts(() -> leftPos, () -> topPos);
 // in init(), or the constructor once the menu's slots exist
 ghosts.add(menu.slots.get(FUEL_SLOT));                                   // every item the slot's mayPlace takes
 ghosts.add(menu.slots.get(INPUT_SLOT), () -> Ghosts.of(sizedIngredient)); // an ingredient's members, at its count
-ghosts.add(headX, headY, () -> List.of(product));                        // not a slot: screen coordinates
+ghosts.add(HEAD_X, HEAD_Y, () -> List.of(product));                      // not a slot: from the panel's corner too
 
-// in the screen's extract
+// in a pass drawn in screen coordinates, such as extractBackground
 for (Ghost ghost : ghosts.shown(Util.getMillis())) {
     GhostDraw.draw(graphics, font, ghost);
 }
@@ -63,7 +63,7 @@ for (Ghost ghost : ghosts.shown(Util.getMillis())) {
 ghosts.at(mouseX, mouseY, Util.getMillis()).map(Ghost::stack);
 ```
 
-A slot's ghost stands at the slot's `x` and `y` plus the suppliers' corner, read each time, so it follows a screen that moves on resize; a `new Ghosts()` has the corner at 0. A slot that holds an item, or is inactive, shows no ghost. A position with several candidates shows one for `Ghosts.CYCLE_MILLIS` (1000) and then the next, picked by the `millis` passed in; `Ghosts` never reads the clock. `at` takes the mouse as `double`, which an `int` caller passes as is.
+A ghost stands at the slot's `x` and `y`, or the `x` and `y` given, plus the suppliers' corner, read each time, so it follows a screen that moves on resize; a `new Ghosts()` has the corner at 0, so its positions are screen coordinates. `Ghost`s are in screen coordinates, so `GhostDraw.draw` goes in a pass drawn in them (`extractBackground`, or after `super.render`), not in `extractLabels`, which is translated to the panel's corner. A slot that holds an item, or is inactive, shows no ghost. A position with several candidates shows one for `Ghosts.CYCLE_MILLIS` (1000) and then the next, picked by the `millis` passed in; `Ghosts` never reads the clock. `at` takes the mouse as `double`, which an `int` caller passes as is.
 
 `add(Slot)` scans the item registry once, on first use, and keeps the result. Any other candidates that cost a scan go through `Ghosts.cached(...)`. What a slot takes is the Module's to decide, and EMI and JEI glue stays in the Module: the runtime depends on neither.
 
