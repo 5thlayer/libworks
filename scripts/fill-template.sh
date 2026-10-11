@@ -54,8 +54,6 @@ permissions:
 jobs:
   ci:
     uses: 5thlayer/libworks/.github/workflows/module-ci.yml@plugin-v$plugin_version
-    with:
-      plugin-version: $plugin_version
 YAML
 
 package="io/github/_5thlayer"

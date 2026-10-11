@@ -79,7 +79,7 @@ class FillTemplate(unittest.TestCase):
         ci = self.text(".github/workflows/ci.yml")
         v = plugin_version()
         self.assertIn(f"uses: 5thlayer/libworks/.github/workflows/module-ci.yml@plugin-v{v}", ci)
-        self.assertIn(f"plugin-version: {v}", ci)
+        self.assertNotIn("plugin-version", ci)
         self.assertNotIn("scripts/tests", ci)
 
     def test_the_tree_is_left_staged_with_nothing_untracked(self):

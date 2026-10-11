@@ -9,7 +9,7 @@ pluginManagement { repositories { mavenLocal(); gradlePluginPortal() } }
 plugins { id 'io.github.5thlayer.libworks.module' version '0.1.0' }
 ```
 
-Its CI is `.github/workflows/module-ci.yml`, called at the same tag: `uses: 5thlayer/libworks/.github/workflows/module-ci.yml@plugin-v<version>` with `plugin-version: <version>`. `fill-template.sh` writes both at the version `plugin/gradle.properties` holds.
+Its CI is `.github/workflows/module-ci.yml`, called at the same tag: `uses: 5thlayer/libworks/.github/workflows/module-ci.yml@plugin-v<version>`. `fill-template.sh` writes both at the version `plugin/gradle.properties` holds. `module-ci.yml` reads the version from that `uses:` ref and fails when `build.gradle` applies another, so the two move together.
 
 ## Releasing it
 
