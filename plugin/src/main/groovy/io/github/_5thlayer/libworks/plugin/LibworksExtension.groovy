@@ -22,32 +22,25 @@ class LibworksExtension {
         configure.execute(upstream)
         if (!upstream.range) throw new GradleException("libworks: upstream '$name' has no range")
         upstreams << upstream
-        def range = upstream.range
-        def lower = upstream.lowerBound
-        project.dependencies.add('implementation', "io.github.5thlayer:${upstream.name}") {
-            version {
-                strictly range
-                prefer lower
-            }
-        }
+        require('implementation', name, upstream.range, upstream.lowerBound)
     }
 
     String getRuntime() { runtime }
 
-    /** Nests libworks-runtime from this version up to the next breaking one, ADR 0001: the next minor below 1.0, the next major from it (docs/runtime.md). */
+    /** Nests libworks-runtime from this version up to the next breaking one (ADR 0001, docs/runtime.md). */
     void setRuntime(String version) {
         if (runtime) throw new GradleException("libworks: runtime is set once, and is already $runtime")
+        def range = "[$version,${Versions.nextBreaking(version)})".toString()
         runtime = version
-        def parts = version.tokenize('.')*.toInteger()
-        def ceiling = parts[0] == 0 ? "0.${parts[1] + 1}" : "${parts[0] + 1}.0"
-        def range = "[$version,$ceiling)".toString()
-        def dependencies = project.dependencies
-        ['implementation', 'jarJar'].each { configuration ->
-            dependencies.add(configuration, 'io.github.5thlayer:libworks-runtime') {
-                it.version {
-                    it.strictly range
-                    it.prefer version
-                }
+        ['implementation', 'jarJar'].each { require(it, 'libworks-runtime', range, version) }
+    }
+
+    /** io.github.5thlayer:<artifact>, strictly in range and preferring its lower bound. Not private: Gradle decorates the extension. */
+    protected void require(String configuration, String artifact, String range, String lower) {
+        project.dependencies.add(configuration, "io.github.5thlayer:$artifact") {
+            it.version {
+                it.strictly range
+                it.prefer lower
             }
         }
     }

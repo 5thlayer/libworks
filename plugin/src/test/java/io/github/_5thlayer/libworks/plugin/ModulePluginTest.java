@@ -99,6 +99,20 @@ class ModulePluginTest {
     }
 
     @Test
+    void refusesARangeWithoutAnInclusiveLowerBound() throws IOException {
+        buildScript("upstream('groundworks') { range = '(0.5.4,0.6)' }");
+        String out = fail("help").getOutput();
+        assertTrue(out.contains("upstream 'groundworks' range '(0.5.4,0.6)' is not a range with an inclusive lower bound"), out);
+    }
+
+    @Test
+    void refusesARuntimeThatIsNotAVersion() throws IOException {
+        buildScript("runtime = 'latest'");
+        String out = fail("help").getOutput();
+        assertTrue(out.contains("'latest' is not a version"), out);
+    }
+
+    @Test
     void nestsTheRuntimeInItsRange() throws IOException {
         buildScript("runtime = '0.1.2'");
         String out = build("-q", "declared").getOutput();

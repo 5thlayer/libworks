@@ -11,6 +11,8 @@ plugins { id 'io.github.5thlayer.libworks.module' version '0.1.0' }
 
 Its CI is `.github/workflows/module-ci.yml`, called at the same tag: `uses: 5thlayer/libworks/.github/workflows/module-ci.yml@plugin-v<version>`. `fill-template.sh` writes both at the version `plugin/gradle.properties` holds. `module-ci.yml` reads the version from that `uses:` ref and fails when `build.gradle` applies another, so the two move together.
 
+An upstream is declared as `upstream('<name>') { range = '[0.5.4,0.6)' }`, with `tagPrefix` when its tags are not `<name>-v<version>`. The range's lower bound is the version the Module prefers and the one CI builds from its tag, so it must be a released version.
+
 ## Releasing it
 
 The plugin has its own version, `plugin_version` in `plugin/gradle.properties`, apart from the template's `mod_version` and the runtime's `runtime_version`, and its own release path: the template's `release` task does not release it, and `release-train` does not cover libworks. ADR 0001 sets the bump by what it does to a Module: a change that makes a Module edit its build is breaking. From a clean main:
