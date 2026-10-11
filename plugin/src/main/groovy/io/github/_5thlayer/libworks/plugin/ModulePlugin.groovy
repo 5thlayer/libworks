@@ -22,10 +22,10 @@ class ModulePlugin implements Plugin<Project> {
         project.pluginManager.apply('maven-publish')
         project.pluginManager.apply('net.neoforged.moddev')
 
-        def p = { String name -> project.property(name) as String }
-        project.group = p('maven_group')
-        project.version = p('mod_version')
-        project.base.archivesName = p('archives_name')
+        def property = { String name -> project.property(name) as String }
+        project.group = property('maven_group')
+        project.version = property('mod_version')
+        project.base.archivesName = property('archives_name')
         // Where Consumers resolve the Libraries from, and where the Module publishes (release-train).
         def mavenLocal = new File(project.repositories.mavenLocal().url.path)
 
@@ -35,22 +35,22 @@ class ModulePlugin implements Plugin<Project> {
         project.java.toolchain.languageVersion = JavaLanguageVersion.of(25)
         project.tasks.withType(JavaCompile).configureEach { it.options.release = 25 }
         // The Minecraft version goes in the jar's name, not the Module's version: beltworks-26.1.2-0.3.0.jar.
-        project.tasks.withType(Jar).configureEach { it.archiveVersion = "${p('minecraft_version')}-${p('mod_version')}" }
+        project.tasks.withType(Jar).configureEach { it.archiveVersion = "${property('minecraft_version')}-${property('mod_version')}" }
 
-        configureNeoForge(project, p)
+        configureNeoForge(project, property)
         configureTests(project)
         configureLicensing(project)
-        configureResources(project, p)
-        configurePublishing(project, p, mavenLocal)
+        configureResources(project, property)
+        configurePublishing(project, property, mavenLocal)
         configureUpstreams(project, libworks)
         configureScripts(project, libworks)
     }
 
-    private static void configureNeoForge(Project project, Closure<String> p) {
+    private static void configureNeoForge(Project project, Closure<String> property) {
         def gameTestReport = project.layout.buildDirectory.file('reports/gametest.xml').get().asFile
-        def modId = p('mod_id')
+        def modId = property('mod_id')
         project.neoForge {
-            version = p('neoforge_version')
+            version = property('neoforge_version')
             runs {
                 // The same player every launch, so a dev save keeps its inventory and position.
                 client {
@@ -126,10 +126,10 @@ class ModulePlugin implements Plugin<Project> {
     }
 
     /** neoforge.mods.toml names nothing of its own: it is filled from gradle.properties. */
-    private static void configureResources(Project project, Closure<String> p) {
+    private static void configureResources(Project project, Closure<String> property) {
         def props = [
-                mod_id: p('mod_id'), mod_name: p('mod_name'), mod_description: p('mod_description'), version: p('mod_version'),
-                minecraft_version: p('minecraft_version'), neoforge_version: p('neoforge_version'),
+                mod_id: property('mod_id'), mod_name: property('mod_name'), mod_description: property('mod_description'), version: property('mod_version'),
+                minecraft_version: property('minecraft_version'), neoforge_version: property('neoforge_version'),
         ]
         project.tasks.named('processResources') {
             inputs.properties props
@@ -141,7 +141,7 @@ class ModulePlugin implements Plugin<Project> {
      * Maven local only. A version there never changes, and nothing publishes against a
      * -PsiblingBuilds checkout: a released Module never requires an unreleased Library.
      */
-    private static void configurePublishing(Project project, Closure<String> p, File mavenLocal) {
+    private static void configurePublishing(Project project, Closure<String> property, File mavenLocal) {
         project.publishing {
             publications {
                 mavenJava(MavenPublication) {
@@ -150,18 +150,27 @@ class ModulePlugin implements Plugin<Project> {
                 }
             }
         }
-        def siblings = project.providers.gradleProperty('siblingBuilds').present
+        def siblings = siblingBuilds(project)
         project.tasks.withType(PublishToMavenLocal).configureEach {
-            def published = new File(mavenLocal, "${p('maven_group').replace('.', '/')}/${p('archives_name')}/${p('mod_version')}")
-            def name = p('mod_name')
-            def version = p('mod_version')
+            def published = new File(mavenLocal, "${property('maven_group').replace('.', '/')}/${property('archives_name')}/${property('mod_version')}")
+            def name = property('mod_name')
+            def version = property('mod_version')
             doFirst {
-                if (siblings) throw new GradleException(
-                        "$name is built against sibling checkouts under -PsiblingBuilds, and nothing publishes under it")
+                if (siblings) refuseUnderSiblingBuilds(name, 'publishes')
                 if (published.exists()) throw new GradleException(
                         "$name $version is already in $published, and a published version never changes: bump mod_version")
             }
         }
+    }
+
+    /** Whether the build substitutes sibling checkouts for the upstreams, under -PsiblingBuilds. */
+    private static boolean siblingBuilds(Project project) {
+        project.providers.gradleProperty('siblingBuilds').present
+    }
+
+    /** Nothing leaves a -PsiblingBuilds build: a released Module never requires an unreleased Library. */
+    private static void refuseUnderSiblingBuilds(Object modName, String what) {
+        throw new GradleException("$modName is built against sibling checkouts under -PsiblingBuilds, and nothing $what under it")
     }
 
     private static void configureUpstreams(Project project, LibworksExtension libworks) {
@@ -177,7 +186,7 @@ class ModulePlugin implements Plugin<Project> {
         // A sibling checkout outside the range still builds, and is refused at load: the composite
         // substitutes it whatever the range says. -P<name>Dir names one, ~/minecraft_mods/<name> by default.
         project.afterEvaluate {
-            if (!project.providers.gradleProperty('siblingBuilds').present) return
+            if (!siblingBuilds(project)) return
             libworks.upstreams.each { upstream ->
                 def path = project.providers.gradleProperty("${upstream.name}Dir").getOrElse("~/minecraft_mods/${upstream.name}")
                 def dir = new File(path.replaceFirst('^~', System.getProperty('user.home'))).canonicalFile
@@ -216,7 +225,8 @@ class ModulePlugin implements Plugin<Project> {
             if (!v) throw new GradleException('Name the version with -PreleaseVersion=<major.minor.patch>')
             v
         }
-        def siblings = gradleProperty('siblingBuilds').present
+        def siblings = siblingBuilds(project)
+        def name = project.property('mod_name')
 
         project.tasks.register('buildGametestStructures', Exec) {
             group = 'libworks'
@@ -245,8 +255,7 @@ class ModulePlugin implements Plugin<Project> {
             workingDir project.projectDir
             executable 'bash'
             doFirst {
-                if (siblings) throw new GradleException(
-                        "${project.property('mod_name')} is built against sibling checkouts under -PsiblingBuilds, and nothing releases under it")
+                if (siblings) refuseUnderSiblingBuilds(name, 'releases')
                 environment 'LIBWORKS_TAG_PREFIX', libworks.tagPrefix
             }
             argumentProviders.add({
