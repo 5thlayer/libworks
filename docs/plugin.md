@@ -1,0 +1,23 @@
+# The convention plugin
+
+`plugin/` builds `io.github.5thlayer:libworks-plugin`, the Gradle plugin `io.github.5thlayer.libworks.module` every Module applies (ADR 0003). It carries the whole Module build: ModDevGradle on Java 25, the game test server that names each test, the jar's licensing, `~/.m2`-only publishing, the `libworks { }` upstream ranges and runtime, and the `release`, `upload` and `buildGametestStructures` tasks with the scripts they run. The template builds it from `plugin/` as an included build; a Module resolves it from `~/.m2`:
+
+```groovy
+// settings.gradle
+pluginManagement { repositories { mavenLocal(); gradlePluginPortal() } }
+// build.gradle
+plugins { id 'io.github.5thlayer.libworks.module' version '0.1.0' }
+```
+
+Its CI is `.github/workflows/module-ci.yml`, called at the same tag: `uses: 5thlayer/libworks/.github/workflows/module-ci.yml@plugin-v<version>` with `plugin-version: <version>`. `fill-template.sh` writes both at the version `plugin/gradle.properties` holds.
+
+## Releasing it
+
+The plugin has its own version, `plugin_version` in `plugin/gradle.properties`, apart from the template's `mod_version` and the runtime's `runtime_version`, and its own release path: the template's `release` task does not release it, and `release-train` does not cover libworks. ADR 0001 sets the bump by what it does to a Module: a change that makes a Module edit its build is breaking. From a clean main:
+
+1. set `plugin_version` and commit `chore(plugin): release <version>`
+2. `sh ./gradlew build runGameTestServer` and `python3 -m unittest discover scripts/tests`
+3. `sh ./gradlew -p plugin publishToMavenLocal`, which refuses a version already in `~/.m2`: a published version never changes, so a fix is the next patch
+4. tag `plugin-v<version>`, annotated with the jar's sha256: `git tag -a plugin-v<version> -m "libworks-plugin <version>" -m "sha256 $(sha256sum ~/.m2/repository/io/github/5thlayer/libworks-plugin/<version>/libworks-plugin-<version>.jar | cut -d' ' -f1)"`
+
+Module CI builds the plugin from that tag, so a Module can move to the version only once the tag is pushed. Nothing is pushed without the user's word. `git tag -l 'plugin-v*' -n9` lists the releases.

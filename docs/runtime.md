@@ -41,7 +41,7 @@ A Module adds its items in one block, in the order it wants them. The order betw
 
 ## Releasing it
 
-The runtime has its own version, `runtime_version` in `runtime/gradle.properties`, apart from the template's `mod_version`, and its own release path: `scripts/release.sh` is the template's and does not release it, and `release-train` does not cover libworks. From a clean main:
+The runtime has its own version, `runtime_version` in `runtime/gradle.properties`, apart from the template's `mod_version`, and its own release path: the template's `release` task does not release it, nor the plugin (`docs/plugin.md`), and `release-train` does not cover libworks. From a clean main:
 
 1. set `runtime_version`, the bump ADR 0001 sets, and commit `chore(runtime): release <version>`
 2. `sh ./gradlew build runGameTestServer`

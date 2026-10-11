@@ -25,11 +25,37 @@ description="${4:-}"
 [[ -n "$name" ]] || fail "the display name is missing."
 [[ -e src/main/java/io/github/_5thlayer/examplelib ]] || fail "no examplelib package here: the template is already filled."
 
-# The runtime jar and the convention plugin belong to libworks, not to a Library (ADR-0128, ADR 0003).
-git rm -rq runtime plugin
+# The runtime jar, the convention plugin and the tooling's own tests and CI belong to libworks, not
+# to a Library (ADR-0128, ADR 0003). The Module applies the plugin at the version plugin/ holds, from
+# ~/.m2, and calls module-ci.yml at that version's tag.
+plugin_version="$(sed -n 's/^plugin_version *= *//p' plugin/gradle.properties)"
+[[ -n "$plugin_version" ]] || fail "plugin/gradle.properties names no plugin_version."
+git rm -rq runtime plugin scripts/tests .github/scripts .github/workflows/module-ci.yml
 sed -i.bak -e '/^\/\/ The runtime jar/d' -e "/^include 'runtime'/d" \
-    -e '/^\/\/ The convention plugin/d' -e "/^include 'plugin'/d" settings.gradle
-rm settings.gradle.bak
+    -e '/The convention plugin a Module applies/,/fill-template.sh swaps/d' \
+    -e "s|^    includeBuild 'plugin'|    repositories { mavenLocal() }|" settings.gradle
+sed -i.bak -e "s|^    id 'io.github.5thlayer.libworks.module'\$|& version '$plugin_version'|" \
+    -e "/^\/\/ The template's own checks/,\$d" build.gradle
+rm settings.gradle.bak build.gradle.bak
+cat > .github/workflows/ci.yml <<YAML
+# Builds and tests every push through the CI every Module shares, at the tag of the plugin
+# build.gradle applies: the two versions move together (ADR 0003). It never publishes.
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    uses: 5thlayer/libworks/.github/workflows/module-ci.yml@plugin-v$plugin_version
+    with:
+      plugin-version: $plugin_version
+YAML
 
 package="io/github/_5thlayer"
 git mv "src/main/java/$package/examplelib" "src/main/java/$package/$id"

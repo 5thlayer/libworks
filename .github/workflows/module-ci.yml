@@ -11,8 +11,11 @@ on:
   workflow_call:
     inputs:
       plugin-version:
-        description: The libworks plugin version the Module applies; its tag plugin-v<version> is built.
-        required: true
+        description: >-
+          The libworks plugin version the Module applies; its tag plugin-v<version> is built. Left
+          empty only by libworks itself, whose build includes plugin/.
+        required: false
+        default: ''
         type: string
 
 permissions:
@@ -33,17 +36,23 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
 
       # The plugin is taken from ~/.m2, which a runner starts without, so it is built from its tag.
-      - uses: actions/checkout@v7
+      - if: inputs.plugin-version != ''
+        uses: actions/checkout@v7
         with:
           repository: 5thlayer/libworks
           ref: plugin-v${{ inputs.plugin-version }}
           path: .libworks
 
-      - run: ./gradlew :plugin:publishToMavenLocal
+      - if: inputs.plugin-version != ''
+        run: ./gradlew -p plugin publishToMavenLocal
         working-directory: .libworks
 
       # Each upstream Library the Module declares, from its tag, the same way.
-      - run: ./gradlew -q libworksUpstreams | sh .libworks/.github/scripts/build-upstreams.sh
+      # libworks itself runs its own copy, having no .libworks checkout.
+      - run: |
+          script=.libworks/.github/scripts/build-upstreams.sh
+          [ -f "$script" ] || script=.github/scripts/build-upstreams.sh
+          ./gradlew -q libworksUpstreams | sh "$script"
 
       # The build, with the JUnit tests.
       - run: ./gradlew build

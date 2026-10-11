@@ -1,5 +1,7 @@
-# Builds and tests every push. It never publishes: a Library's jar reaches the Pack only through
-# ~/.m2, and Modrinth and CurseForge, only from a maintainer's machine (docs/agents/releases.md).
+# Builds and tests every push through the Module CI every Module calls (ADR 0003). It never
+# publishes: a Library's jar reaches a Consumer only through ~/.m2, and Modrinth and CurseForge,
+# only from a maintainer's machine (docs/agents/releases.md). The template builds its plugin from
+# plugin/; fill-template.sh points a Module at module-ci.yml at the plugin's tag instead.
 name: CI
 
 on:
@@ -11,44 +13,12 @@ permissions:
   contents: read
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v7
+  ci:
+    uses: ./.github/workflows/module-ci.yml
 
-      - uses: actions/setup-java@v6
-        with:
-          distribution: temurin
-          java-version: 25
-
-      - uses: gradle/actions/setup-gradle@v6
-
-      # The build, with the JUnit tests.
-      - run: ./gradlew build
-
-      # A headless server that runs the game tests and names each one; it fails if it ran none.
-      - run: ./gradlew runGameTestServer
-
-      - if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: gametest-report
-          path: |
-            build/reports/gametest.xml
-            build/reports/tests/
-            run/gametest/logs/
-          if-no-files-found: ignore
-
-  # The upload step's tests, against a stand-in server on localhost. They contact no site.
+  # The template's own: the upload, upstream and fill-template steps' tests, on localhost only.
   scripts:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
       - run: python3 -m unittest discover scripts/tests
-
-  reuse:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: fsfe/reuse-action@v6

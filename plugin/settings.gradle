@@ -1,0 +1,2 @@
+// An included build of the template's (ADR 0003), and the build module-ci.yml publishes from its tag.
+rootProject.name = 'libworks-plugin'
