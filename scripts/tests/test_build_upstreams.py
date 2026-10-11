@@ -50,7 +50,7 @@ class BuildUpstreams(unittest.TestCase):
     def test_publishes_each_upstream_from_its_tag(self):
         self.upstream("5thlayer/groundworks", ["groundworks-v0.5.4", "groundworks-v0.5.5"])
         self.upstream("5thlayer/craft", ["v0.2.0"])
-        result = self.run_script("5thlayer/groundworks groundworks-v0.5.4 0.5.4\n5thlayer/craft v0.2.0 0.2.0\n")
+        result = self.run_script("5thlayer/groundworks groundworks-v0.5.4\n5thlayer/craft v0.2.0\n")
         self.assertEqual(0, result.returncode, result.stderr)
         self.assertEqual("5thlayer/groundworks groundworks-v0.5.4 publishToMavenLocal\n"
                          "5thlayer/craft v0.2.0 publishToMavenLocal\n", self.published())
@@ -62,7 +62,7 @@ class BuildUpstreams(unittest.TestCase):
 
     def test_a_missing_tag_fails(self):
         self.upstream("5thlayer/craft", ["v0.2.0"])
-        result = self.run_script("5thlayer/craft v0.3.0 0.3.0\n")
+        result = self.run_script("5thlayer/craft v0.3.0\n")
         self.assertNotEqual(0, result.returncode)
         self.assertEqual("", self.published())
 

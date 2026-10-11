@@ -86,8 +86,8 @@ class ModulePluginTest {
                 """);
         String out = build("-q", "libworksUpstreams").getOutput();
         assertEquals("""
-                5thlayer/groundworks groundworks-v0.5.4 0.5.4
-                5thlayer/craftworks v0.2.0 0.2.0
+                5thlayer/groundworks groundworks-v0.5.4
+                5thlayer/craftworks v0.2.0
                 """, out.replace("\r", ""));
     }
 

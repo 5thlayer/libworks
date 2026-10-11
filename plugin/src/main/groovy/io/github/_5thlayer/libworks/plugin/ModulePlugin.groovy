@@ -165,12 +165,12 @@ class ModulePlugin implements Plugin<Project> {
     }
 
     private static void configureUpstreams(Project project, LibworksExtension libworks) {
-        // One line per upstream, "<repo> <tag> <version>", the lowest in range: what CI builds first.
+        // One line per upstream, "<repo> <tag>", the tag of the lowest version in range: what CI builds.
         project.tasks.register('libworksUpstreams') {
             group = 'help'
-            description = 'Prints each upstream Library CI builds: repo, tag, version.'
+            description = 'Prints each upstream Library CI builds: repo and tag.'
             doLast {
-                libworks.upstreams.each { println "${it.repo} ${it.tagPrefix}${it.lowerBound} ${it.lowerBound}" }
+                libworks.upstreams.each { println "${it.repo} ${it.tagPrefix}${it.lowerBound}" }
             }
         }
 
