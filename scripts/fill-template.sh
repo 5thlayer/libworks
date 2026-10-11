@@ -31,16 +31,30 @@ description="${4:-}"
 plugin_version="$(sed -n 's/^plugin_version *= *//p' plugin/gradle.properties)"
 [[ -n "$plugin_version" ]] || fail "plugin/gradle.properties names no plugin_version."
 git rm -rq runtime plugin scripts/tests .github/scripts .github/workflows/module-ci.yml
+# Their docs and libworks' own ADRs go with them: a Module keeps ADR 0001, the versioning rule every
+# Library inherits, and numbers its own from 0002.
+git rm -q docs/plugin.md docs/runtime.md docs/adr/0002-*.md docs/adr/0003-*.md
 sed -i.bak -e '/^\/\/ The runtime jar/d' -e "/^include 'runtime'/d" \
     -e '/The convention plugin a Module applies/,/fill-template.sh swaps/d' \
     -e "/^    includeBuild 'plugin'/d" \
     -e "s|^\\( *\\)maven { url = 'https://maven.neoforged.net/releases' }\$|&\\n\\1mavenLocal()|" settings.gradle
-sed -i.bak -e "s|^    id 'io.github.5thlayer.libworks.module'\$|& version '$plugin_version'|" \
-    -e "/^\/\/ The template's own checks/,\$d" build.gradle
-rm settings.gradle.bak build.gradle.bak
+rm settings.gradle.bak
+cat > build.gradle <<GRADLE
+// The Module build, every piece of it from the libworks convention plugin (libworks ADR 0003), at a
+// released version from ~/.m2.
+plugins {
+    id 'io.github.5thlayer.libworks.module' version '$plugin_version'
+}
+
+// What the Module requires of other Libraries, each as a range (libworks ADR 0003):
+// libworks {
+//     upstream('groundworks') { range = '[0.4.0,0.5)' }
+//     runtime = '0.1.0'
+// }
+GRADLE
 cat > .github/workflows/ci.yml <<YAML
 # Builds and tests every push through the CI every Module shares, at the tag of the plugin
-# build.gradle applies: the two versions move together (ADR 0003). It never publishes.
+# build.gradle applies: the two versions move together (libworks ADR 0003). It never publishes.
 name: CI
 
 on:
@@ -74,13 +88,19 @@ if [[ -n "$description" ]]; then
     rm gradle.properties.bak
 fi
 
+# The changelog's entries and the README are libworks' own: the Module starts with an empty
+# Unreleased section and a README stub of its name and description.
+sed -i.bak '/^## Unreleased$/q' CHANGELOG.md
+rm CHANGELOG.md.bak
+{ printf '# %s\n' "$name"; [[ -z "$description" ]] || printf '\n%s\n' "$description"; } > README.md
+
 # CLAUDE.md's template-only section tells an agent the checkout is the template, which a Library is not.
 perl -0pi -e 's/\n<!-- template-only:.*?<!-- \/template-only -->\n//s' CLAUDE.md
 ! grep -q template-only CLAUDE.md || fail "CLAUDE.md still has its template-only section."
 
 git rm -q scripts/fill-template.sh
 echo "Filled the template as $id ($class, \"$name\"). Next:"
-echo "  - write GLOSSARY.md's first terms and README.md's pitch"
+echo "  - write GLOSSARY.md's first terms and README.md's pitch, from its stub"
 echo "  - if the Library goes to Modrinth and CurseForge, set its projects and dependencies in gradle.properties"
 echo "  - sh ./gradlew build runGameTestServer"
 echo "  - commit: chore: fill the libworks template"
