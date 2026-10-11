@@ -1,5 +1,6 @@
 package io.github._5thlayer.libworks.plugin;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -55,6 +56,9 @@ class ModulePluginTest {
                 // What the Module declares, read without resolving anything.
                 tasks.register('extendsLocalRuntime') {
                     doLast { println configurations.runtimeClasspath.extendsFrom*.name.contains('localRuntime') }
+                }
+                tasks.register('repositoryNames') {
+                    doLast { repositories.each { println it.name } }
                 }
                 tasks.register('declared') {
                     doLast {
@@ -127,6 +131,23 @@ class ModulePluginTest {
         assertEquals("versionRange = \"[0.5.4,0.6)\"\n", processedModsToml());
         buildScript("upstream('groundworks') { range = '[0.5.5,0.6)' }");
         assertEquals("versionRange = \"[0.5.5,0.6)\"\n", processedModsToml());
+    }
+
+    @Test
+    void expandsTheRuntimesRangeInTheModsToml() throws IOException {
+        Path toml = Files.createDirectories(module.resolve("src/main/resources/META-INF")).resolve("neoforge.mods.toml");
+        Files.writeString(toml, "versionRange = \"${libworks_runtime_range}\"\n");
+        buildScript("runtime = '0.1.0'");
+        assertEquals("versionRange = \"[0.1.0,0.2)\"\n", processedModsToml());
+        buildScript("runtime = '0.1.3'");
+        assertEquals("versionRange = \"[0.1.3,0.2)\"\n", processedModsToml());
+    }
+
+    @Test
+    void leavesNoUnfilteredMavenLocalRepository() throws IOException {
+        buildScript("");
+        String out = build("-q", "repositoryNames").getOutput();
+        assertFalse(out.contains("MavenLocal"), out);
     }
 
     @Test
@@ -251,6 +272,20 @@ class ModulePluginTest {
         build("buildGametestStructures");
         Path platform = module.resolve("src/main/resources/data/beltworks/structure/gametest/platform.nbt");
         assertTrue(Files.size(platform) > 0, platform.toString());
+    }
+
+    @Test
+    void leavesAnIdenticalGametestPlatformAndRefusesToOverwriteAModulesOwn() throws IOException {
+        buildScript("");
+        build("buildGametestStructures");
+        Path platform = module.resolve("src/main/resources/data/beltworks/structure/gametest/platform.nbt");
+        byte[] generated = Files.readAllBytes(platform);
+        build("buildGametestStructures");
+        assertArrayEquals(generated, Files.readAllBytes(platform));
+        Files.write(platform, new byte[] {1, 2, 3});
+        String out = fail("buildGametestStructures").getOutput();
+        assertTrue(out.contains("platform.nbt"), out);
+        assertArrayEquals(new byte[] {1, 2, 3}, Files.readAllBytes(platform));
     }
 
     private void git(String... args) throws IOException, InterruptedException {

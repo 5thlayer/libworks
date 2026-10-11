@@ -14,6 +14,7 @@ import gzip
 import io
 import os
 import struct
+import sys
 
 ROOT = os.getcwd()
 
@@ -94,6 +95,18 @@ def main():
         _string(out, "")
         _payload(out, platform(size))
         path = os.path.join(STRUCTURES, name)
+        if os.path.exists(path):
+            with gzip.open(path, "rb") as existing:
+                try:
+                    same = existing.read() == out.getvalue()
+                except OSError:
+                    same = False
+            if same:
+                print("kept " + os.path.relpath(path, ROOT))
+                continue
+            # A Module needing another structure commits it (ADR 0003): never overwrite it.
+            sys.exit("refusing to overwrite " + os.path.relpath(path, ROOT) +
+                     ", which differs from the default platform: the Module's own structure stays as committed")
         # mtime 0, so the same input always writes the same bytes.
         with open(path, "wb") as handle, gzip.GzipFile(fileobj=handle, mode="wb", mtime=0) as zipped:
             zipped.write(out.getvalue())

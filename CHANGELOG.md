@@ -4,6 +4,9 @@ Written for Consumers: what a mod building against Example Library can use, or w
 
 ## Unreleased
 
+- `libworks-plugin` 0.1.2: `buildGametestStructures` refuses, naming the file, to overwrite a `platform.nbt` the Module committed that differs from the default one.
+- `libworks-plugin` 0.1.2: the plugin no longer leaves an unfiltered `mavenLocal()` repository on the Module.
+- `libworks-plugin` 0.1.2: `neoforge.mods.toml` can name the runtime's range as `${libworks_runtime_range}`, such as `[0.1.0,0.2)`, when `runtime` is set.
 - `libworks-plugin` 0.1.2: `libworksUpstreams` lists the runtime as `5thlayer/libworks runtime-v<version> :runtime` when `runtime` is set, and `module-ci.yml` publishes `libworks-runtime` from that tag, so a Module nesting it builds in CI.
 - `libworks-plugin` 0.1.1: `neoforge.mods.toml` can name an upstream's range as `${<name>_range}`, such as `versionRange = "${groundworks_range}"`.
 - `libworks-plugin` 0.1.1: `upstream('<name>') { optional = true }` puts the Library on a `localRuntime` configuration the dev runs load, leaving the published jar, pom and module metadata free of it.

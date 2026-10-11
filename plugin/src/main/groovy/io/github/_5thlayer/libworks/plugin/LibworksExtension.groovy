@@ -27,12 +27,14 @@ class LibworksExtension {
 
     String getRuntime() { runtime }
 
+    /** The range libworks-runtime is nested in, or null when runtime is not set. */
+    String getRuntimeRange() { runtime ? "[$runtime,${Versions.nextBreaking(runtime)})".toString() : null }
+
     /** Nests libworks-runtime from this version up to the next breaking one (ADR 0001, docs/runtime.md). */
     void setRuntime(String version) {
         if (runtime) throw new GradleException("libworks: runtime is set once, and is already $runtime")
-        def range = "[$version,${Versions.nextBreaking(version)})".toString()
         runtime = version
-        ['implementation', 'jarJar'].each { require(it, 'libworks-runtime', range, version) }
+        ['implementation', 'jarJar'].each { require(it, 'libworks-runtime', runtimeRange, version) }
     }
 
     /** io.github.5thlayer:<artifact>, strictly in range and preferring its lower bound. Not private: Gradle decorates the extension. */

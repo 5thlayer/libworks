@@ -27,7 +27,10 @@ class ModulePlugin implements Plugin<Project> {
         project.version = property('mod_version')
         project.base.archivesName = property('archives_name')
         // Where Consumers resolve the Libraries from, and where the Module publishes (release-train).
-        def mavenLocal = new File(project.repositories.mavenLocal().url.path)
+        // mavenLocal() says where that is, and is removed again: only a Module's filtered ~/.m2 repo resolves.
+        def local = project.repositories.mavenLocal()
+        project.repositories.remove(local)
+        def mavenLocal = new File(local.url.path)
 
         // Optional upstreams: on the dev runs' classpath, never in the published jar, pom or module metadata.
         def localRuntime = project.configurations.maybeCreate('localRuntime')
@@ -136,7 +139,11 @@ class ModulePlugin implements Plugin<Project> {
                 minecraft_version: property('minecraft_version'), neoforge_version: property('neoforge_version'),
         ]
         project.tasks.named('processResources') {
-            def ranges = { libworks.upstreams.collectEntries { ["${it.name}_range".toString(), it.range] } }
+            def ranges = {
+                def r = libworks.upstreams.collectEntries { ["${it.name}_range".toString(), it.range] }
+                if (libworks.runtimeRange) r.libworks_runtime_range = libworks.runtimeRange
+                r
+            }
             inputs.properties props
             inputs.property 'upstreamRanges', project.provider { ranges() }
             filesMatching('META-INF/neoforge.mods.toml') { expand props + ranges() }
@@ -239,7 +246,7 @@ class ModulePlugin implements Plugin<Project> {
 
         project.tasks.register('buildGametestStructures', Exec) {
             group = 'libworks'
-            description = 'Writes the stone platform the game tests stand on.'
+            description = 'Writes the stone platform the game tests stand on, refusing to overwrite a Module\'s own.'
             workingDir project.projectDir
             executable 'python3'
             argumentProviders.add({ [extract('build-gametest-structures.py')] } as org.gradle.process.CommandLineArgumentProvider)
