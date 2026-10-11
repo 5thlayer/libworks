@@ -129,6 +129,12 @@ class FillTemplate(unittest.TestCase):
         self.assertIn("buildGametestStructures tasks", build)
         self.assertIn("upstream('groundworks')", build)
 
+    def test_the_gametest_code_and_pack_move_to_the_module_s_id(self):
+        dev_packs = self.repo / "src/gametest/java/io/github/_5thlayer/craftworks/gametest/DevPacks.java"
+        self.assertIn("Craftworks.MOD_ID", dev_packs.read_text())
+        self.assertTrue((self.repo / "src/gametest/resources/gametest_pack/data/craftworks/tags/item/gametest_pack.json").is_file())
+        self.assertFalse(any("examplelib" in str(p) for p in (self.repo / "src").rglob("*")))
+
     def test_the_tree_is_left_staged_with_nothing_untracked(self):
         self.assertEqual("", git(self.repo, "ls-files", "--others", "--exclude-standard"))
 

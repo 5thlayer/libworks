@@ -21,6 +21,8 @@ An upstream with `optional = true` goes on `localRuntime`, a configuration the p
 
 The plugin adds no repository: it reads where `~/.m2` is from `mavenLocal()` and removes it again, so only a Module's own `includeModule`-filtered `~/.m2` repository resolves.
 
+The plugin adds a `gametest` source set to the mod, which the dev runs load and the jar leaves out (ADR 0004): `src/gametest/resources` holds the Module's dev pack, `dev_pack/`, and game-test pack, `gametest_pack/`, and `src/gametest/java` the code that switches them on, built against the Module's own code and dependencies. Every run gets `libworks.run`, its name: the template's `DevPacks` adds `dev_pack/` when it is `client` and `gametest_pack/` when it is `gameTestServer`. A Module that also adds the source set to its mod, `sourceSet sourceSets.gametest` in `neoForge.mods`, is refused naming that line, where ModDevGradle would refuse the duplicate only once a run starts.
+
 `buildGametestStructures` writes the default `gametest/platform.nbt`, leaves an identical one alone, and fails naming the file when the Module has committed a different one: a Module needing another structure commits it (ADR 0003).
 
 ## Releasing it

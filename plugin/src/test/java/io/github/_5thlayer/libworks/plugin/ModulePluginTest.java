@@ -72,6 +72,10 @@ class ModulePluginTest {
                 """.formatted(libworksBlock));
     }
 
+    private void appendBuildScript(String more) throws IOException {
+        Files.writeString(module.resolve("build.gradle"), Files.readString(module.resolve("build.gradle")) + more);
+    }
+
     private GradleRunner runner(String... args) {
         List<String> all = new ArrayList<>(List.of(args));
         all.add("--stacktrace");
@@ -116,6 +120,73 @@ class ModulePluginTest {
         buildScript("upstream('groundworks') { range = '[0.5.4,0.6)' }");
         assertTrue(build("-q", "declared").getOutput().contains(
                 "implementation io.github.5thlayer:groundworks strictly=[0.5.4,0.6) prefer=0.5.4"));
+    }
+
+    @Test
+    void addsTheGametestSourceSetToTheMod() throws IOException {
+        buildScript("");
+        appendBuildScript("""
+                tasks.register('modSourceSets') {
+                    doLast { println neoForge.mods.beltworks.modSourceSets.get()*.name }
+                }
+                """);
+        assertEquals("[main, gametest]\n", build("-q", "modSourceSets").getOutput());
+    }
+
+    @Test
+    void setsLibworksRunToEachRunsName() throws IOException {
+        buildScript("");
+        appendBuildScript("""
+                neoForge { runs { server { server() } } }
+                tasks.register('runNames') {
+                    doLast { neoForge.runs.each { println "${it.name} ${it.systemProperties.get()['libworks.run']}" } }
+                }
+                """);
+        assertEquals("""
+                client client
+                gameTestServer gameTestServer
+                server server
+                """, build("-q", "runNames").getOutput().replace("\r", ""));
+    }
+
+    @Test
+    void compilesGametestCodeAgainstTheModuleAndNeoForge() throws IOException {
+        buildScript("");
+        Path main = Files.createDirectories(module.resolve("src/main/java/belt"));
+        Files.writeString(main.resolve("Belt.java"), "package belt; public final class Belt { public static final String ID = \"beltworks\"; }\n");
+        Path gametest = Files.createDirectories(module.resolve("src/gametest/java/belt"));
+        Files.writeString(gametest.resolve("DevPacks.java"), """
+                package belt;
+                final class DevPacks {
+                    static net.minecraft.resources.Identifier id() { return net.minecraft.resources.Identifier.fromNamespaceAndPath(Belt.ID, "dev_pack"); }
+                }
+                """);
+        build("compileGametestJava");
+        assertTrue(Files.isRegularFile(module.resolve("build/classes/java/gametest/belt/DevPacks.class")));
+    }
+
+    @Test
+    void leavesTheGametestSourceSetOutOfTheJar() throws IOException {
+        buildScript("");
+        Path pack = Files.createDirectories(module.resolve("src/gametest/resources/gametest_pack"));
+        Files.writeString(pack.resolve("pack.mcmeta"), "{}\n");
+        Files.writeString(module.resolve("LICENSE"), "MIT\n");
+        build("jar");
+        Path jar = module.resolve("build/libs/beltworks-26.1.2-0.3.0.jar");
+        try (var zip = new java.util.zip.ZipFile(jar.toFile())) {
+            assertTrue(zip.stream().noneMatch(e -> e.getName().startsWith("gametest_pack")), jar.toString());
+        }
+    }
+
+    @Test
+    void refusesAModuleThatAddsTheGametestSourceSetToItsModItself() throws IOException {
+        buildScript("");
+        appendBuildScript("""
+                sourceSets { gametest }
+                neoForge { mods { beltworks { sourceSet sourceSets.gametest } } }
+                """);
+        String out = fail("help").getOutput();
+        assertTrue(out.contains("beltworks adds the gametest source set to its mod, which the plugin does itself (libworks ADR 0004)"), out);
     }
 
     private String processedModsToml() throws IOException {

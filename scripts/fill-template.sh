@@ -33,7 +33,7 @@ plugin_version="$(sed -n 's/^plugin_version *= *//p' plugin/gradle.properties)"
 git rm -rq runtime plugin scripts/tests .github/scripts .github/workflows/module-ci.yml
 # Their docs and libworks' own ADRs go with them: a Module keeps ADR 0001, the versioning rule every
 # Library inherits, and numbers its own from 0002.
-git rm -q docs/plugin.md docs/runtime.md docs/adr/0002-*.md docs/adr/0003-*.md
+git rm -q docs/plugin.md docs/runtime.md docs/adr/0002-*.md docs/adr/0003-*.md docs/adr/0004-*.md
 sed -i.bak -e '/^\/\/ The runtime jar/d' -e "/^include 'runtime'/d" \
     -e '/The convention plugin a Module applies/,/fill-template.sh swaps/d' \
     -e "/^    includeBuild 'plugin'/d" \
@@ -66,6 +66,8 @@ YAML
 package="io/github/_5thlayer"
 git mv "src/main/java/$package/examplelib" "src/main/java/$package/$id"
 git mv "src/test/java/$package/examplelib" "src/test/java/$package/$id"
+git mv "src/gametest/java/$package/examplelib" "src/gametest/java/$package/$id"
+git mv "src/gametest/resources/gametest_pack/data/examplelib" "src/gametest/resources/gametest_pack/data/$id"
 git mv "src/main/resources/data/examplelib" "src/main/resources/data/$id"
 git mv "src/main/java/$package/$id/ExampleLib.java" "src/main/java/$package/$id/$class.java"
 git mv "src/main/java/$package/$id/gametest/ExampleLibGameTests.java" "src/main/java/$package/$id/gametest/${class}GameTests.java"

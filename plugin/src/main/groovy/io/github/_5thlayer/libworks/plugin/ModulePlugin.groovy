@@ -55,9 +55,17 @@ class ModulePlugin implements Plugin<Project> {
     private static void configureNeoForge(Project project, Closure<String> property) {
         def gameTestReport = project.layout.buildDirectory.file('reports/gametest.xml').get().asFile
         def modId = property('mod_id')
+        // What only the Module's own runs load, and the jar leaves out: its dev and game-test packs (ADR 0004).
+        // Its code builds on the Module's own and the Module's dependencies.
+        def gametest = project.sourceSets.maybeCreate('gametest')
+        project.configurations.named(gametest.implementationConfigurationName) { it.extendsFrom project.configurations.implementation }
+        project.dependencies.add(gametest.implementationConfigurationName, project.sourceSets.main.output)
         project.neoForge {
             version = property('neoforge_version')
             runs {
+                // Which run this is, by its name: the template's DevPacks switches on dev_pack/ in client and
+                // gametest_pack/ in gameTestServer (ADR 0004).
+                configureEach { run -> run.systemProperty 'libworks.run', run.name }
                 // The same player every launch, so a dev save keeps its inventory and position.
                 client {
                     client()
@@ -72,11 +80,19 @@ class ModulePlugin implements Plugin<Project> {
                     programArguments.addAll '--tests', "${modId}:*", '--report', gameTestReport.absolutePath
                 }
             }
+            addModdingDependenciesTo gametest
             mods {
                 "$modId" {
                     sourceSet project.sourceSets.main
+                    sourceSet gametest
                 }
             }
+        }
+
+        // ModDevGradle refuses a source set listed twice only once a run starts; this names the line to delete.
+        project.afterEvaluate {
+            if (project.neoForge.mods.getByName(modId).modSourceSets.get().count { it.name == gametest.name } > 1) throw new GradleException(
+                    "$modId adds the gametest source set to its mod, which the plugin does itself (libworks ADR 0004): delete `sourceSet sourceSets.gametest` from its neoForge.mods block")
         }
 
         // The report, not the exit code, decides, and names each test: a run that ran none fails.
