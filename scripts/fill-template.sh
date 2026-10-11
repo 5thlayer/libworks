@@ -33,7 +33,8 @@ plugin_version="$(sed -n 's/^plugin_version *= *//p' plugin/gradle.properties)"
 git rm -rq runtime plugin scripts/tests .github/scripts .github/workflows/module-ci.yml
 sed -i.bak -e '/^\/\/ The runtime jar/d' -e "/^include 'runtime'/d" \
     -e '/The convention plugin a Module applies/,/fill-template.sh swaps/d' \
-    -e "s|^    includeBuild 'plugin'|    repositories { mavenLocal() }|" settings.gradle
+    -e "/^    includeBuild 'plugin'/d" \
+    -e "s|^\\( *\\)maven { url = 'https://maven.neoforged.net/releases' }\$|&\\n\\1mavenLocal()|" settings.gradle
 sed -i.bak -e "s|^    id 'io.github.5thlayer.libworks.module'\$|& version '$plugin_version'|" \
     -e "/^\/\/ The template's own checks/,\$d" build.gradle
 rm settings.gradle.bak build.gradle.bak

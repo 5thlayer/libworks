@@ -59,6 +59,13 @@ class FillTemplate(unittest.TestCase):
         self.assertNotIn("includeBuild", settings)
         self.assertNotIn("include '", settings)
 
+    def test_maven_local_joins_the_one_plugin_repositories_block_after_neoforge(self):
+        settings = self.text("settings.gradle")
+        self.assertEqual(1, settings.count("repositories {"), settings)
+        lines = [line.strip() for line in settings.splitlines()]
+        neoforge = next(i for i, line in enumerate(lines) if "maven.neoforged.net" in line)
+        self.assertEqual("mavenLocal()", lines[neoforge + 1], settings)
+
     def test_the_plugin_and_the_runtime_are_gone(self):
         self.assertFalse((self.repo / "plugin").exists())
         self.assertFalse((self.repo / "runtime").exists())
