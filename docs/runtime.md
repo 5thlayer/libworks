@@ -4,7 +4,7 @@
 
 | Class | For |
 |---|---|
-| `io.github._5thlayer.libworks.WorksTab` | `KEY`, the `ResourceKey<CreativeModeTab>` of `libworks:works`, the one "Works" tab the whole -works suite shares. Its icon is vanilla's iron pickaxe, so it exists without any Module. |
+| `io.github._5thlayer.libworks.WorksTab` | `KEY`, the `ResourceKey<CreativeModeTab>` of `libworks:works`, the one "Works" tab the whole FactoryWorks suite shares. Its icon is vanilla's iron pickaxe, so it exists without any Module. |
 | `io.github._5thlayer.libworks.transfer.GuardedResourceHandler` | A transfer face with per-slot rules. NeoForge's `DelegatingResourceHandler` sends slot-less insert and extract past them; this loops through its own slots instead. |
 | `io.github._5thlayer.libworks.ghost.Ghost` | `Ghost(ItemStack stack, int x, int y)`: a faded item and where it is drawn, in screen coordinates. |
 | `io.github._5thlayer.libworks.ghost.Ghosts` | A screen's ghosts, the items an empty slot would take: positions registered once, each with its candidates, which cycle one a second. No client types, so a game test reads it. |
@@ -25,7 +25,7 @@ dependencies {
 
 The range is what makes two Modules nesting different patches load one copy: FML keeps the highest version in range. A breaking change bumps the minor, which leaves the range, as ADR 0001 sets for every version here.
 
-The Pack pins the Module's jar, which carries the nested jar; nothing else is installed.
+A modpack pins the Module's jar, which carries the nested jar; nothing else is installed.
 
 ## The Works tab
 

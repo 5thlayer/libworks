@@ -11,8 +11,12 @@ The Library's terms, each with what it is and the words to avoid. `/domain-model
 **Example Library**:
 This Library.
 
+**FactoryWorks**:
+The suite of 5thlayer mods this Library belongs to, with the other Libraries.
+_Avoid_: the -works suite, the Pack
+
 **Consumer**:
-A mod that builds against this Library: the FactoryWorks Pack, or another Library.
+A mod that builds against this Library, such as another FactoryWorks Library, or a modpack that loads it.
 _Avoid_: client (collides with the game's client side), dependent, integration
 
 ### Dev runs
