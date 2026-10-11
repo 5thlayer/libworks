@@ -1,12 +1,12 @@
-// The Module build, every piece of it from the libworks convention plugin (ADR 0003): ModDevGradle on
-// Java 25, the game test server that names each test, the jar's licensing, ~/.m2-only publishing,
-// and the release, upload and buildGametestStructures tasks. The template builds the plugin from
-// plugin/; fill-template.sh pins a Module to the released version.
+// The Module build, every piece of it from the libworks convention plugin (libworks ADR 0003):
+// ModDevGradle on Java 25, the game test server that names each test, the jar's licensing, ~/.m2-only
+// publishing, and the release, upload and buildGametestStructures tasks.
+// The template builds the plugin from plugin/; fill-template.sh pins a Module to the released version.
 plugins {
     id 'io.github.5thlayer.libworks.module'
 }
 
-// What the Module requires of other Libraries, each as a range (ADR 0003):
+// What the Module requires of other Libraries, each as a range (libworks ADR 0003):
 // libworks {
 //     upstream('groundworks') { range = '[0.4.0,0.5)' }
 //     runtime = '0.1.0'

@@ -92,13 +92,21 @@ class FillTemplate(unittest.TestCase):
         self.assertTrue(adrs[0].startswith("0001-"), adrs)
 
     def test_no_file_names_a_libworks_adr_as_the_modules_own(self):
+        # Every ADR the template holds but 0001 is libworks' own, by number or by path.
+        numbers = [p.name[:4] for p in (ROOT / "docs/adr").glob("*.md") if not p.name.startswith("0001-")]
+        pattern = re.compile(rf"(ADR[ -]|adr/)({'|'.join(numbers)})")
         for name in filter(None, git(self.repo, "ls-files", "-z").split("\0")):
             path = self.repo / name
             if path.suffix in (".png", ".nbt", ".jar") or not path.is_file():
                 continue
             text = path.read_text(errors="ignore")
-            for m in re.finditer(r"ADR[ -]000[23]", text):
+            for m in pattern.finditer(text):
                 self.assertTrue(text[:m.start()].endswith("libworks "), f"{name}: {text[max(0, m.start() - 40):m.end()]!r}")
+
+    def test_reuse_names_no_path_the_fill_removes(self):
+        reuse = self.text("REUSE.toml")
+        self.assertNotIn("plugin/", reuse)
+        self.assertNotIn('"scripts/', reuse)
 
     def test_the_changelog_keeps_its_header_and_an_empty_unreleased(self):
         changelog = self.text("CHANGELOG.md")
@@ -112,11 +120,14 @@ class FillTemplate(unittest.TestCase):
         self.assertNotIn("template", readme.lower())
         self.assertNotIn("Starting a Library", readme)
 
-    def test_build_gradle_names_no_template_build_of_the_plugin(self):
+    def test_build_gradle_is_the_template_s_less_its_own_build_of_the_plugin(self):
         build = self.text("build.gradle")
         self.assertNotIn("plugin/", build)
         self.assertNotIn("includedBuild", build)
         self.assertIn("libworks ADR 0003", build)
+        # What the plugin provides and the libworks { } example stay as the template words them.
+        self.assertIn("buildGametestStructures tasks", build)
+        self.assertIn("upstream('groundworks')", build)
 
     def test_the_tree_is_left_staged_with_nothing_untracked(self):
         self.assertEqual("", git(self.repo, "ls-files", "--others", "--exclude-standard"))

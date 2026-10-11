@@ -4,7 +4,6 @@ Written for Consumers: what a mod building against Example Library can use, or w
 
 ## Unreleased
 
-- `fill-template.sh` leaves a Library none of libworks' own files (#15): no `docs/plugin.md`, `docs/runtime.md` or ADRs but 0001, an empty `## Unreleased`, a README stub of the Library's name and description, and a `build.gradle` that is only the plugin block.
 - `libworks-plugin` 0.1.2: `buildGametestStructures` refuses, naming the file, to overwrite a `platform.nbt` the Module committed that differs from the default one.
 - `libworks-plugin` 0.1.2: the plugin no longer leaves an unfiltered `mavenLocal()` repository on the Module.
 - `libworks-plugin` 0.1.2: `neoforge.mods.toml` can name the runtime's range as `${libworks_runtime_range}`, such as `[0.1.0,0.2)`, when `runtime` is set.

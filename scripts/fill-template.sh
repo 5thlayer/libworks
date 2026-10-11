@@ -38,20 +38,11 @@ sed -i.bak -e '/^\/\/ The runtime jar/d' -e "/^include 'runtime'/d" \
     -e '/The convention plugin a Module applies/,/fill-template.sh swaps/d' \
     -e "/^    includeBuild 'plugin'/d" \
     -e "s|^\\( *\\)maven { url = 'https://maven.neoforged.net/releases' }\$|&\\n\\1mavenLocal()|" settings.gradle
-rm settings.gradle.bak
-cat > build.gradle <<GRADLE
-// The Module build, every piece of it from the libworks convention plugin (libworks ADR 0003), at a
-// released version from ~/.m2.
-plugins {
-    id 'io.github.5thlayer.libworks.module' version '$plugin_version'
-}
-
-// What the Module requires of other Libraries, each as a range (libworks ADR 0003):
-// libworks {
-//     upstream('groundworks') { range = '[0.4.0,0.5)' }
-//     runtime = '0.1.0'
-// }
-GRADLE
+sed -i.bak -e "s|^    id 'io.github.5thlayer.libworks.module'\$|& version '$plugin_version'|" \
+    -e '/^\/\/ The template builds the plugin/d' -e "/^\/\/ The template's own checks/,\$d" build.gradle
+# REUSE.toml's paths for the scripts and the plugin's resources name nothing in a Module.
+sed -i.bak -e '/^    "scripts\//d' -e '/^    "plugin\//d' REUSE.toml
+rm settings.gradle.bak build.gradle.bak REUSE.toml.bak
 cat > .github/workflows/ci.yml <<YAML
 # Builds and tests every push through the CI every Module shares, at the tag of the plugin
 # build.gradle applies: the two versions move together (libworks ADR 0003). It never publishes.
