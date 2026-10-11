@@ -181,11 +181,14 @@ class ModulePlugin implements Plugin<Project> {
 
     private static void configureUpstreams(Project project, LibworksExtension libworks) {
         // One line per upstream, "<repo> <tag>", the tag of the lowest version in range: what CI builds.
+        // The runtime, when set, adds "5thlayer/libworks runtime-v<version> :runtime": a third field
+        // names the one project CI publishes from that checkout, which it does not recurse into.
         project.tasks.register('libworksUpstreams') {
             group = 'help'
             description = 'Prints each upstream Library CI builds: repo and tag.'
             doLast {
                 libworks.upstreams.each { println "${it.repo} ${it.tagPrefix}${it.lowerBound}" }
+                if (libworks.runtime) println "5thlayer/libworks runtime-v${libworks.runtime} :runtime"
             }
         }
 

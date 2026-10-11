@@ -4,6 +4,7 @@ Written for Consumers: what a mod building against Example Library can use, or w
 
 ## Unreleased
 
+- `libworks-plugin` 0.1.2: `libworksUpstreams` lists the runtime as `5thlayer/libworks runtime-v<version> :runtime` when `runtime` is set, and `module-ci.yml` publishes `libworks-runtime` from that tag, so a Module nesting it builds in CI.
 - `libworks-plugin` 0.1.1: `neoforge.mods.toml` can name an upstream's range as `${<name>_range}`, such as `versionRange = "${groundworks_range}"`.
 - `libworks-plugin` 0.1.1: `upstream('<name>') { optional = true }` puts the Library on a `localRuntime` configuration the dev runs load, leaving the published jar, pom and module metadata free of it.
 - `libworks-runtime` 0.1.0, a runtime mod (id `libworks`) a Module nests, FML loading the newest copy once. It registers the shared creative tab `libworks:works`, titled "Works", whose key is `WorksTab.KEY`, and holds `GuardedResourceHandler`, a `DelegatingResourceHandler` whose slot-less insert and extract honour a subclass's per-slot refusals (`docs/runtime.md`, #8).

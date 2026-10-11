@@ -80,6 +80,17 @@ class BuildUpstreams(unittest.TestCase):
         self.assertEqual(0, result.returncode, result.stderr)
         self.assertEqual("5thlayer/groundworks groundworks-v0.5.4 publishToMavenLocal\n", self.published())
 
+    def test_a_line_naming_a_project_publishes_only_that_project_once_without_recursing(self):
+        self.upstream("5thlayer/libworks", ["runtime-v0.1.0"], plugin="0.1.0",
+                      upstreams="5thlayer/craft v0.2.0\\n")
+        (self.tmp / "m2/io/github/5thlayer/libworks-plugin/0.1.0").mkdir(parents=True)
+        self.upstream("5thlayer/groundworks", ["groundworks-v0.5.4"], plugin="0.1.0",
+                      upstreams="5thlayer/libworks runtime-v0.1.0 :runtime\\n")
+        result = self.run_script("5thlayer/groundworks groundworks-v0.5.4\n5thlayer/libworks runtime-v0.1.0 :runtime\n")
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertEqual("5thlayer/libworks runtime-v0.1.0 :runtime:publishToMavenLocal\n"
+                         "5thlayer/groundworks groundworks-v0.5.4 publishToMavenLocal\n", self.published())
+
     def test_no_upstreams_builds_nothing(self):
         result = self.run_script("")
         self.assertEqual(0, result.returncode, result.stderr)

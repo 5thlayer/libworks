@@ -15,6 +15,8 @@ An upstream is declared as `upstream('<name>') { range = '[0.5.4,0.6)' }`, with 
 
 An upstream with `optional = true` goes on `localRuntime`, a configuration the plugin creates (or takes over, when the Module declares one) and `runtimeClasspath` extends: the dev runs load it, and the published jar, pom and module metadata do not depend on it. `libworksUpstreams` still lists it, so CI builds its tag, and `-PsiblingBuilds` still checks its range.
 
+`libworksUpstreams` prints one line per upstream, `<repo> <tag>`, which `module-ci.yml` hands `.github/scripts/build-upstreams.sh` to publish each to the runner's `~/.m2`. With `runtime` set it adds `5thlayer/libworks runtime-v<version> :runtime`: a third field names the one Gradle project to publish from that checkout (`./gradlew :runtime:publishToMavenLocal`), which is not recursed into. Each line is built once.
+
 `processResources` expands `META-INF/neoforge.mods.toml` with `mod_id`, `mod_name`, `mod_description`, `version`, `minecraft_version`, `neoforge_version`, and each upstream's range as `${<name>_range}`, the Maven range the dependency uses: `versionRange = "${groundworks_range}"`.
 
 ## Releasing it

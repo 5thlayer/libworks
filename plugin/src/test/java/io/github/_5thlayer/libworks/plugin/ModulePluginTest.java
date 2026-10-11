@@ -96,6 +96,18 @@ class ModulePluginTest {
     }
 
     @Test
+    void listsTheRuntimeForCiAsTheLibworksRuntimeProject() throws IOException {
+        buildScript("""
+                upstream('groundworks') { range = '[0.5.4,0.6)' }
+                runtime = '0.1.0'
+                """);
+        assertEquals("""
+                5thlayer/groundworks groundworks-v0.5.4
+                5thlayer/libworks runtime-v0.1.0 :runtime
+                """, build("-q", "libworksUpstreams").getOutput().replace("\r", ""));
+    }
+
+    @Test
     void requiresEachUpstreamStrictlyInItsRangeAndPrefersTheLowerBound() throws IOException {
         buildScript("upstream('groundworks') { range = '[0.5.4,0.6)' }");
         assertTrue(build("-q", "declared").getOutput().contains(

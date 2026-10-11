@@ -6,6 +6,8 @@
 # Library to ~/.m2 from its tag, as its release does on a maintainer's machine. An upstream that
 # applies the libworks plugin has the plugin version it applies, then its own upstreams, built first,
 # recursively; each repo and tag is built once. An upstream not on the plugin is published as is.
+# A line `<repo> <tag> <project>`, such as `5thlayer/libworks runtime-v0.1.0 :runtime`, publishes
+# only that Gradle project from the tag, and is not recursed into.
 # LIBWORKS_GIT_BASE names where the repos live, https://github.com by default; MAVEN_REPO_LOCAL
 # the local maven repository, ~/.m2/repository by default.
 set -eu
@@ -27,25 +29,28 @@ plugin() (
 
 # Runs in a subshell, so a recursive call keeps its caller's variables.
 upstream() (
-    repo=$1 tag=$2
+    repo=$1 tag=$2 project=${3:-}
     ! grep -qxF "$repo $tag" "$built" || exit 0
     echo "$repo $tag" >> "$built"
     dir="$PWD/.upstreams/$repo/$tag"
-    echo "Building $repo from $tag"
+    echo "Building $repo${project:+ $project} from $tag"
     git clone -q --depth 1 --branch "$tag" "$base/$repo" "$dir"
+    if [ -n "$project" ]; then
+        cd "$dir" && exec ./gradlew "$project:publishToMavenLocal"
+    fi
     version=$(sed -n "s/^ *id 'io\.github\.5thlayer\.libworks\.module' version '\([^']*\)'.*/\1/p" "$dir/build.gradle" 2>/dev/null || true)
     if [ -n "$version" ]; then
         plugin "$version"
         (cd "$dir" && ./gradlew -q libworksUpstreams) > "$dir.upstreams"
-        while read -r r t; do
+        while read -r r t p; do
             [ -n "$r" ] || continue
-            upstream "$r" "$t"
+            upstream "$r" "$t" $p
         done < "$dir.upstreams"
     fi
     cd "$dir" && ./gradlew publishToMavenLocal
 )
 
-while read -r repo tag; do
+while read -r repo tag project; do
     [ -n "$repo" ] || continue
-    upstream "$repo" "$tag"
+    upstream "$repo" "$tag" $project
 done
