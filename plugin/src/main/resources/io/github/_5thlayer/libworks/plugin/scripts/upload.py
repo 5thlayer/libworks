@@ -5,7 +5,9 @@
 # Upload the released <version> to Modrinth and CurseForge: the jar the local maven repository
 # holds for it, with that version's changelog section as its notes.
 #
-#   scripts/upload.py [--dry-run] [--site modrinth|curseforge] <version>
+#   sh ./gradlew upload -PreleaseVersion=<version> [-PdryRun] [-Psite=modrinth|curseforge]
+#
+# The libworks plugin bundles it and runs it in the Module's directory, whose files it reads.
 #
 # Each site is uploaded on its own: a failure on one leaves the other, and --site retries just one.
 # Each site's token comes from the environment, and is never printed. When one is missing, the script
@@ -35,13 +37,11 @@ import uuid
 import zipfile
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path.cwd()
 MODRINTH_API = "https://api.modrinth.com/v2"
 CURSEFORGE_UPLOAD = "https://minecraft.curseforge.com"
 # The upload API can't list a project's files, so the website's own listing, which needs no key, does.
 CURSEFORGE_API = "https://www.curseforge.com"
-# What checkJarLicensing in build.gradle requires of the jar.
-LICENSING = ["LICENSE", "LICENSES/MIT.txt"]
 SECRET_HEADERS = {"Authorization", "X-Api-Token"}
 # What upload_release_type may name; both sites call the three types alike.
 RELEASE_TYPES = ["release", "beta", "alpha"]
@@ -97,10 +97,19 @@ def changelog(version):
     return "\n".join(lines)
 
 
+def licensing():
+    """What the plugin's checkJarLicensing requires of the jar: LICENSE, NOTICE and every file under
+    LICENSES/, those the Module has."""
+    names = [name for name in ["LICENSE", "NOTICE"] if (ROOT / name).is_file()]
+    if (ROOT / "LICENSES").is_dir():
+        names += [p.relative_to(ROOT).as_posix() for p in (ROOT / "LICENSES").rglob("*") if p.is_file()]
+    return sorted(names)
+
+
 def lacking_licensing(data):
     with zipfile.ZipFile(io.BytesIO(data)) as z:
         names = set(z.namelist())
-    return [name for name in LICENSING if name not in names]
+    return [name for name in licensing() if name not in names]
 
 
 def multipart(fields):
@@ -282,7 +291,7 @@ SITES = {"modrinth": ("Modrinth", Release.modrinth), "curseforge": ("CurseForge"
 
 
 def main(args):
-    usage = "usage: scripts/upload.py [--dry-run] [--site modrinth|curseforge] <major.minor.patch>"
+    usage = "usage: sh ./gradlew upload -PreleaseVersion=<major.minor.patch> [-PdryRun] [-Psite=modrinth|curseforge]"
     dry_run = "--dry-run" in args
     args = [a for a in args if a != "--dry-run"]
     props = properties()

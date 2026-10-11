@@ -17,7 +17,8 @@ from pathlib import Path
 
 from standin import StandIn
 
-SCRIPT = Path(__file__).resolve().parents[1] / "upload.py"
+# The copy the plugin bundles; a Module runs it from build/libworks/ in its own directory.
+SCRIPT = Path(__file__).resolve().parents[2] / "plugin/src/main/resources/io/github/_5thlayer/libworks/plugin/scripts/upload.py"
 SECRETS = {"MODRINTH_TOKEN": "mrp_standin-secret-token", "CURSEFORGE_TOKEN": "cf-upload-secret-token"}
 MODRINTH_PROJECT = "examplelib-standin"
 CF_PROJECT = "123456"
@@ -69,9 +70,10 @@ class Upload(unittest.TestCase):
         self.addCleanup(self.site.close)
         self.root = Path(tempfile.mkdtemp())
         self.addCleanup(shutil.rmtree, self.root)
-        # The script reads the changelog and gradle.properties of the checkout it sits in.
-        (self.root / "scripts").mkdir()
-        shutil.copy(SCRIPT, self.root / "scripts")
+        # The script reads the changelog, gradle.properties and licensing of the directory it runs in.
+        (self.root / "LICENSES").mkdir()
+        (self.root / "LICENSES/MIT.txt").write_text("MIT")
+        (self.root / "LICENSE").write_text("MIT")
         (self.root / "CHANGELOG.md").write_text(CHANGELOG)
         (self.root / "gradle.properties").write_text(PROPERTIES)
         self.maven = self.root / "m2"
@@ -90,7 +92,7 @@ class Upload(unittest.TestCase):
     def upload(self, *args, **env):
         environment = {**self.env, **env}
         environment = {k: v for k, v in environment.items() if v is not None}
-        result = subprocess.run([sys.executable, str(self.root / "scripts/upload.py"), *args],
+        result = subprocess.run([sys.executable, str(SCRIPT), *args], cwd=self.root,
                                 env=environment, capture_output=True, text=True)
         for secret in SECRETS.values():
             self.assertNotIn(secret, result.stdout + result.stderr)
@@ -140,6 +142,16 @@ class Upload(unittest.TestCase):
             with self.subTest(lacking):
                 shutil.rmtree(self.maven, ignore_errors=True)
                 self.publish("0.3.9", jar(**{lacking: None}))
+                self.assertRefusedBeforeAnyRequest(self.upload("0.3.9"), lacking)
+
+    def test_the_licensing_is_what_the_module_carries(self):
+        # Every file under LICENSES/, and NOTICE when there is one, as the plugin puts in the jar.
+        (self.root / "LICENSES/Apache-2.0.txt").write_text("Apache")
+        (self.root / "NOTICE").write_text("Notice")
+        for lacking in ["LICENSES/Apache-2.0.txt", "NOTICE"]:
+            with self.subTest(lacking):
+                shutil.rmtree(self.maven, ignore_errors=True)
+                self.publish("0.3.9", jar(**{"LICENSES/Apache-2.0.txt": "Apache", "NOTICE": "Notice", lacking: None}))
                 self.assertRefusedBeforeAnyRequest(self.upload("0.3.9"), lacking)
 
     def test_a_missing_token_is_fetched_through_op_run(self):

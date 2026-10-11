@@ -160,4 +160,44 @@ class ModulePluginTest {
                 "-x", "jar", "-x", "sourcesJar", "-x", "compileJava", "-x", "processResources", "-x", "generateMetadataFileForMavenJavaPublication").getOutput();
         assertTrue(out.contains("nothing publishes under it"), out);
     }
+
+    @Test
+    void writesTheGametestPlatformIntoTheModulesNamespace() throws IOException {
+        buildScript("");
+        build("buildGametestStructures");
+        Path platform = module.resolve("src/main/resources/data/beltworks/structure/gametest/platform.nbt");
+        assertTrue(Files.size(platform) > 0, platform.toString());
+    }
+
+    private void git(String... args) throws IOException, InterruptedException {
+        List<String> all = new ArrayList<>(List.of("git", "-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false"));
+        all.addAll(List.of(args));
+        assertEquals(0, new ProcessBuilder(all).directory(module.toFile()).inheritIO().start().waitFor());
+    }
+
+    @Test
+    void releaseTagsByTheModulesPrefix() throws Exception {
+        buildScript("tagPrefix = 'belt-v'");
+        Files.writeString(module.resolve(".gitignore"), ".gradle/\nbuild/\n");
+        git("init", "-q");
+        git("add", ".");
+        git("commit", "-q", "-m", "init");
+        git("tag", "belt-v0.4.0");
+        String out = fail("release", "-PreleaseVersion=0.4.0").getOutput();
+        assertTrue(out.contains("belt-v0.4.0 already exists"), out);
+    }
+
+    @Test
+    void refusesToReleaseUnderSiblingBuilds() throws IOException {
+        buildScript("");
+        String out = fail("-PsiblingBuilds", "release", "-PreleaseVersion=0.4.0").getOutput();
+        assertTrue(out.contains("nothing releases under it"), out);
+    }
+
+    @Test
+    void uploadRunsTheBundledScriptInTheModule() throws IOException {
+        buildScript("");
+        String out = fail("upload", "-PreleaseVersion=0.3.0", "-PdryRun").getOutput();
+        assertTrue(out.contains("goes to neither site"), out);
+    }
 }

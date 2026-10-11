@@ -7,7 +7,7 @@ A game test is placed into a structure template, and its helper's coordinates ar
 the template's corner. The tests place every block they need themselves, so all the template
 holds is the floor. It is generated so the committed .nbt file has a source.
 
-Run it from anywhere: python3 scripts/build-gametest-structures.py
+The libworks plugin bundles it and runs it in the Module's directory: sh ./gradlew buildGametestStructures
 """
 
 import gzip
@@ -15,7 +15,7 @@ import io
 import os
 import struct
 
-ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
+ROOT = os.getcwd()
 
 
 def _mod_id():

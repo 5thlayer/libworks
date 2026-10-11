@@ -4,9 +4,12 @@
 #
 # Release the Library at <version> from HEAD: the changelog's Unreleased entries become <version>'s,
 # the build and game tests pass, and the jar is published to the local maven repository, tagged,
-# and, with --upload, uploaded to Modrinth and CurseForge by scripts/upload.py, when gradle.properties names a project.
+# and, with --upload, uploaded to Modrinth and CurseForge by upload.py, when gradle.properties names a project.
 #
-#   scripts/release.sh [--upload] <version>
+#   sh ./gradlew release -PreleaseVersion=<version> [-Pupload]
+#
+# The libworks plugin bundles it and runs it in the Module's directory, with $LIBWORKS_TAG_PREFIX
+# the Module's tag prefix (libworks { tagPrefix }); the plugin refuses it under -PsiblingBuilds.
 #
 # It stops after the tag and prints the upload command, since an upload is public and for good and
 # waits on the user's word; --upload uploads too. Flags may come in any position.
@@ -15,7 +18,7 @@
 # $MAVEN_REPO_LOCAL publishes somewhere other than ~/.m2/repository, to try the script out, and
 # then the upload is only a dry run.
 set -euo pipefail
-cd "$(dirname "$0")/.."
+here="$(cd "$(dirname "$0")" && pwd)"
 
 fail() { echo "release: $*" >&2; exit 1; }
 
@@ -26,7 +29,7 @@ group="$(property maven_group)"
 artifact="$(property archives_name)"
 [[ -n "$name" && -n "$group" && -n "$artifact" ]] || fail "gradle.properties must name mod_name, maven_group and archives_name."
 
-usage="usage: scripts/release.sh [--upload] <major.minor.patch>"
+usage="usage: sh ./gradlew release -PreleaseVersion=<major.minor.patch> [-Pupload]"
 upload_now= version=
 for arg in "$@"; do
     case "$arg" in
@@ -36,7 +39,8 @@ for arg in "$@"; do
     esac
 done
 [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || fail "$usage"
-tag="v$version"
+[[ -n "${LIBWORKS_TAG_PREFIX:-}" ]] || fail "LIBWORKS_TAG_PREFIX is unset; run it as sh ./gradlew release."
+tag="$LIBWORKS_TAG_PREFIX$version"
 repo="${MAVEN_REPO_LOCAL:-$HOME/.m2/repository}"
 published="$repo/${group//.//}/$artifact/$version"
 
@@ -67,16 +71,16 @@ echo "jar sha256 $sha"
 
 # Last, so a failed upload leaves the local release and its tag as they are, to retry on their own.
 # A trial against another maven repository only shows what it would upload.
-upload=(scripts/upload.py)
+upload=(python3 "$here/upload.py")
 [[ -z "${MAVEN_REPO_LOCAL:-}" ]] || upload+=(--dry-run)
 projects="$(property modrinth_project_id)$(property curseforge_project_id)${MODRINTH_PROJECT_ID:-}${CURSEFORGE_PROJECT_ID:-}"
 if [[ -z "$projects" ]]; then
     echo "gradle.properties names no Modrinth or CurseForge project, so nothing is uploaded."
 elif [[ -z "$upload_now" ]]; then
-    echo "Upload with: scripts/upload.py $version"
+    echo "Upload with: sh ./gradlew upload -PreleaseVersion=$version"
 elif ! "${upload[@]}" "$version"; then
     echo "release: $version is released and tagged, but an upload failed; retry it with" >&2
-    echo "release:   scripts/upload.py --site <site> $version" >&2
+    echo "release:   sh ./gradlew upload -PreleaseVersion=$version -Psite=<site>" >&2
     echo "release: for each site named above." >&2
 fi
 echo "Push with: git push origin HEAD $tag"

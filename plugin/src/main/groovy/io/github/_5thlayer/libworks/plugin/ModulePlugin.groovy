@@ -5,6 +5,7 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.publish.maven.tasks.PublishToMavenLocal
+import org.gradle.api.tasks.Exec
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.jvm.toolchain.JavaLanguageVersion
@@ -42,6 +43,7 @@ class ModulePlugin implements Plugin<Project> {
         configureResources(project, p)
         configurePublishing(project, p, mavenLocal)
         configureUpstreams(project, libworks)
+        configureScripts(project, libworks)
     }
 
     private static void configureNeoForge(Project project, Closure<String> p) {
@@ -190,6 +192,68 @@ class ModulePlugin implements Plugin<Project> {
                         "-PsiblingBuilds: ${upstream.name} $version in $dir is outside ${upstream.range}, which the Module requires" +
                                 " and which would refuse it at load. A minor of ${upstream.name} needs this range moved in this checkout too.")
             }
+        }
+    }
+
+    /**
+     * The scripts every Module shares ship in the plugin, are extracted to build/libworks/ and run
+     * in the Module's directory: release.sh, upload.py and build-gametest-structures.py (ADR 0003).
+     * -PreleaseVersion names the version; -Pupload uploads after a release, -PdryRun and -Psite
+     * pass to the upload.
+     */
+    private static void configureScripts(Project project, LibworksExtension libworks) {
+        def dir = project.layout.buildDirectory.dir('libworks')
+        def extract = { String name ->
+            def file = dir.get().file(name).asFile
+            file.parentFile.mkdirs()
+            ModulePlugin.getResourceAsStream("scripts/$name").withCloseable { file.bytes = it.bytes }
+            file.setExecutable(true)
+            file.absolutePath
+        }
+        def gradleProperty = { String name -> project.providers.gradleProperty(name) }
+        def version = { ->
+            def v = gradleProperty('releaseVersion').orNull
+            if (!v) throw new GradleException('Name the version with -PreleaseVersion=<major.minor.patch>')
+            v
+        }
+        def siblings = gradleProperty('siblingBuilds').present
+
+        project.tasks.register('buildGametestStructures', Exec) {
+            group = 'libworks'
+            description = 'Writes the stone platform the game tests stand on.'
+            workingDir project.projectDir
+            executable 'python3'
+            argumentProviders.add({ [extract('build-gametest-structures.py')] } as org.gradle.process.CommandLineArgumentProvider)
+        }
+
+        project.tasks.register('upload', Exec) {
+            group = 'libworks'
+            description = 'Uploads a released version to Modrinth and CurseForge.'
+            workingDir project.projectDir
+            executable 'python3'
+            argumentProviders.add({
+                def args = [extract('upload.py')]
+                if (gradleProperty('dryRun').present) args << '--dry-run'
+                if (gradleProperty('site').present) args += ['--site', gradleProperty('site').get()]
+                args << version()
+            } as org.gradle.process.CommandLineArgumentProvider)
+        }
+
+        project.tasks.register('release', Exec) {
+            group = 'libworks'
+            description = 'Releases a version to the local maven repository and tags it.'
+            workingDir project.projectDir
+            executable 'bash'
+            doFirst {
+                if (siblings) throw new GradleException(
+                        "${project.property('mod_name')} is built against sibling checkouts under -PsiblingBuilds, and nothing releases under it")
+                environment 'LIBWORKS_TAG_PREFIX', libworks.tagPrefix
+            }
+            argumentProviders.add({
+                def args = [extract('release.sh')]
+                if (gradleProperty('upload').present) args << '--upload'
+                args << version()
+            } as org.gradle.process.CommandLineArgumentProvider)
         }
     }
 }

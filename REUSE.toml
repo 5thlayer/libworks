@@ -12,6 +12,7 @@ path = [
     "**/*.mods.toml",
     "scripts/*.py",
     "scripts/*.sh",
+    "plugin/src/main/resources/**/scripts/*",
     "**/*.md",
     "**/src/main/resources/**/*.json",
     "**/src/gametest/resources/**/*.nbt",
