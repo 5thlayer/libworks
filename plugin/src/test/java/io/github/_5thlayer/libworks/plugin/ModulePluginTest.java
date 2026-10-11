@@ -1,6 +1,7 @@
 package io.github._5thlayer.libworks.plugin;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -52,9 +53,12 @@ class ModulePluginTest {
                 %s
                 }
                 // What the Module declares, read without resolving anything.
+                tasks.register('extendsLocalRuntime') {
+                    doLast { println configurations.runtimeClasspath.extendsFrom*.name.contains('localRuntime') }
+                }
                 tasks.register('declared') {
                     doLast {
-                        ['implementation', 'jarJar'].each { c ->
+                        ['implementation', 'jarJar', 'localRuntime'].each { c ->
                             configurations[c].dependencies.each { d ->
                                 println "$c ${d.group}:${d.name} strictly=${d.versionConstraint.strictVersion} prefer=${d.versionConstraint.preferredVersion}"
                             }
@@ -111,6 +115,29 @@ class ModulePluginTest {
         assertEquals("versionRange = \"[0.5.4,0.6)\"\n", processedModsToml());
         buildScript("upstream('groundworks') { range = '[0.5.5,0.6)' }");
         assertEquals("versionRange = \"[0.5.5,0.6)\"\n", processedModsToml());
+    }
+
+    @Test
+    void putsAnOptionalUpstreamOnLocalRuntimeOnly() throws IOException {
+        buildScript("upstream('groundworks') { range = '[0.5.4,0.6)'; optional = true }");
+        String out = build("-q", "declared").getOutput();
+        assertTrue(out.contains("localRuntime io.github.5thlayer:groundworks strictly=[0.5.4,0.6) prefer=0.5.4"), out);
+        assertFalse(out.contains("implementation io.github.5thlayer:groundworks"), out);
+        assertEquals("true\n", build("-q", "extendsLocalRuntime").getOutput());
+        assertEquals("5thlayer/groundworks groundworks-v0.5.4\n", build("-q", "libworksUpstreams").getOutput());
+    }
+
+    @Test
+    void keepsAModulesOwnLocalRuntime() throws IOException {
+        buildScript("upstream('groundworks') { range = '[0.5.4,0.6)'; optional = true }\n}\nconfigurations { localRuntime }\nlibworks {");
+        assertTrue(build("-q", "declared").getOutput().contains("localRuntime io.github.5thlayer:groundworks"));
+    }
+
+    @Test
+    void refusesASiblingOfAnOptionalUpstreamOutsideTheRange() throws IOException {
+        buildScript("upstream('groundworks') { range = '[0.5.4,0.6)'; optional = true }");
+        Path checkout = siblingAt("0.6.0");
+        assertTrue(fail("-PsiblingBuilds", "-PgroundworksDir=" + checkout, "help").getOutput().contains("outside [0.5.4,0.6)"));
     }
 
     @Test

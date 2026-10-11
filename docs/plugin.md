@@ -13,6 +13,8 @@ Its CI is `.github/workflows/module-ci.yml`, called at the same tag: `uses: 5thl
 
 An upstream is declared as `upstream('<name>') { range = '[0.5.4,0.6)' }`, with `tagPrefix` when its tags are not `<name>-v<version>`. The range's lower bound is the version the Module prefers and the one CI builds from its tag, so it must be a released version.
 
+An upstream with `optional = true` goes on `localRuntime`, a configuration the plugin creates (or takes over, when the Module declares one) and `runtimeClasspath` extends: the dev runs load it, and the published jar, pom and module metadata do not depend on it. `libworksUpstreams` still lists it, so CI builds its tag, and `-PsiblingBuilds` still checks its range.
+
 `processResources` expands `META-INF/neoforge.mods.toml` with `mod_id`, `mod_name`, `mod_description`, `version`, `minecraft_version`, `neoforge_version`, and each upstream's range as `${<name>_range}`, the Maven range the dependency uses: `versionRange = "${groundworks_range}"`.
 
 ## Releasing it

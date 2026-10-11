@@ -22,7 +22,7 @@ class LibworksExtension {
         configure.execute(upstream)
         if (!upstream.range) throw new GradleException("libworks: upstream '$name' has no range")
         upstreams << upstream
-        require('implementation', name, upstream.range, upstream.lowerBound)
+        require(upstream.optional ? 'localRuntime' : 'implementation', name, upstream.range, upstream.lowerBound)
     }
 
     String getRuntime() { runtime }

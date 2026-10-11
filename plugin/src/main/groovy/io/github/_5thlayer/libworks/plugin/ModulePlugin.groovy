@@ -29,6 +29,9 @@ class ModulePlugin implements Plugin<Project> {
         // Where Consumers resolve the Libraries from, and where the Module publishes (release-train).
         def mavenLocal = new File(project.repositories.mavenLocal().url.path)
 
+        // Optional upstreams: on the dev runs' classpath, never in the published jar, pom or module metadata.
+        def localRuntime = project.configurations.maybeCreate('localRuntime')
+        project.configurations.named('runtimeClasspath') { it.extendsFrom localRuntime }
         def libworks = project.extensions.create('libworks', LibworksExtension, project)
 
         project.java.withSourcesJar()

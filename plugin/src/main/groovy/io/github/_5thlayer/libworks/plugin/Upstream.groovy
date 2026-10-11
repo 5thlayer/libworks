@@ -10,6 +10,8 @@ class Upstream {
     /** The artifact, which is also the checkout's directory name and the repo's under 5thlayer. */
     final String name
     String tagPrefix
+    /** On localRuntime, for dev runs only: the published Module does not depend on it. */
+    boolean optional
     private Versions.Range parsed
 
     Upstream(String name) {
