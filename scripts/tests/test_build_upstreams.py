@@ -25,21 +25,28 @@ class BuildUpstreams(unittest.TestCase):
         self.work = self.tmp / "work"
         self.work.mkdir()
 
-    def upstream(self, repo, tags):
-        """A repository whose gradlew records the task it ran and the version it was tagged at."""
+    def upstream(self, repo, tags, plugin=None, upstreams=""):
+        """A repository whose gradlew records the task it ran and the version it was tagged at. With
+        a plugin version it applies the libworks plugin, and prints upstreams for libworksUpstreams."""
         path = self.base / repo
         path.mkdir(parents=True)
         git(path, "init", "-q")
         for tag in tags:
             (path / "gradlew").write_text(
-                f'#!/bin/sh\necho "{repo} {tag} $*" >> "$PUBLISHED"\n')
+                '#!/bin/sh\n'
+                f'if [ "$*" = "-q libworksUpstreams" ]; then printf "{upstreams}"; exit; fi\n'
+                f'echo "{repo} {tag} $*" >> "$PUBLISHED"\n')
             (path / "gradlew").chmod(0o755)
+            if plugin:
+                (path / "build.gradle").write_text(
+                    f"plugins {{\n    id 'io.github.5thlayer.libworks.module' version '{plugin}'\n}}\n")
             git(path, "add", ".")
             git(path, "commit", "-qm", tag)
             git(path, "tag", tag)
 
     def run_script(self, lines):
-        env = dict(os.environ, LIBWORKS_GIT_BASE=str(self.base), PUBLISHED=str(self.tmp / "published"))
+        env = dict(os.environ, LIBWORKS_GIT_BASE=str(self.base), PUBLISHED=str(self.tmp / "published"),
+                   MAVEN_REPO_LOCAL=str(self.tmp / "m2"))
         return subprocess.run(["sh", str(SCRIPT)], cwd=self.work, input=lines, text=True, env=env,
                               capture_output=True)
 
@@ -54,6 +61,24 @@ class BuildUpstreams(unittest.TestCase):
         self.assertEqual(0, result.returncode, result.stderr)
         self.assertEqual("5thlayer/groundworks groundworks-v0.5.4 publishToMavenLocal\n"
                          "5thlayer/craft v0.2.0 publishToMavenLocal\n", self.published())
+
+    def test_an_upstream_on_the_plugin_has_its_own_upstreams_built_first_once_each(self):
+        self.upstream("5thlayer/libworks", ["plugin-v0.1.0"])
+        self.upstream("5thlayer/groundworks", ["groundworks-v0.5.4"], plugin="0.1.0")
+        self.upstream("5thlayer/beltworks", ["beltworks-v0.3.0"], plugin="0.1.0",
+                      upstreams="5thlayer/groundworks groundworks-v0.5.4\\n")
+        result = self.run_script("5thlayer/beltworks beltworks-v0.3.0\n5thlayer/groundworks groundworks-v0.5.4\n")
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertEqual("5thlayer/libworks plugin-v0.1.0 -p plugin publishToMavenLocal\n"
+                         "5thlayer/groundworks groundworks-v0.5.4 publishToMavenLocal\n"
+                         "5thlayer/beltworks beltworks-v0.3.0 publishToMavenLocal\n", self.published())
+
+    def test_the_plugin_an_upstream_applies_is_not_rebuilt_when_in_maven_local(self):
+        (self.tmp / "m2/io/github/5thlayer/libworks-plugin/0.1.0").mkdir(parents=True)
+        self.upstream("5thlayer/groundworks", ["groundworks-v0.5.4"], plugin="0.1.0")
+        result = self.run_script("5thlayer/groundworks groundworks-v0.5.4\n")
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertEqual("5thlayer/groundworks groundworks-v0.5.4 publishToMavenLocal\n", self.published())
 
     def test_no_upstreams_builds_nothing(self):
         result = self.run_script("")
