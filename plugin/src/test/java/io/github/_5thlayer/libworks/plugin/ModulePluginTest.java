@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 5thlayer
+// SPDX-License-Identifier: MIT
+
 package io.github._5thlayer.libworks.plugin;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
