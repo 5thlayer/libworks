@@ -25,9 +25,10 @@ description="${4:-}"
 [[ -n "$name" ]] || fail "the display name is missing."
 [[ -e src/main/java/io/github/_5thlayer/examplelib ]] || fail "no examplelib package here: the template is already filled."
 
-# The runtime jar belongs to libworks, not to a Library (ADR-0128).
-git rm -rq runtime
-sed -i.bak -e '/^\/\/ The runtime jar/d' -e "/^include 'runtime'/d" settings.gradle
+# The runtime jar and the convention plugin belong to libworks, not to a Library (ADR-0128, ADR 0003).
+git rm -rq runtime plugin
+sed -i.bak -e '/^\/\/ The runtime jar/d' -e "/^include 'runtime'/d" \
+    -e '/^\/\/ The convention plugin/d' -e "/^include 'plugin'/d" settings.gradle
 rm settings.gradle.bak
 
 package="io/github/_5thlayer"

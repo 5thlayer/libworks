@@ -1,0 +1,55 @@
+plugins {
+    id 'groovy'
+    id 'java-gradle-plugin'
+    id 'maven-publish'
+}
+
+group = maven_group
+version = plugin_version
+base.archivesName = 'libworks-plugin'
+
+repositories {
+    maven { url = 'https://maven.neoforged.net/releases' }
+    gradlePluginPortal()
+}
+
+dependencies {
+    // Applied by the plugin to every Module, so its version is the plugin's (ADR 0003).
+    implementation 'net.neoforged:moddev-gradle:2.0.147'
+
+    testImplementation platform('org.junit:junit-bom:5.10.2')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+gradlePlugin {
+    plugins {
+        module {
+            id = 'io.github.5thlayer.libworks.module'
+            implementationClass = 'io.github._5thlayer.libworks.plugin.ModulePlugin'
+        }
+    }
+}
+
+// The tests run the plugin on a fixture Module through Gradle TestKit.
+test {
+    useJUnitPlatform()
+}
+
+publishing {
+    publications.withType(MavenPublication).configureEach {
+        if (name == 'pluginMaven') artifactId = base.archivesName.get()
+    }
+}
+
+// As the root's and the runtime's: a version in the local maven repository never changes, so a fix
+// is the next patch.
+tasks.withType(PublishToMavenLocal).configureEach {
+    def local = repositories.mavenLocal()
+    repositories.remove(local)
+    def published = new File(local.url.path, "${maven_group.replace('.', '/')}/${base.archivesName.get()}/$plugin_version")
+    doFirst {
+        if (published.exists()) throw new GradleException(
+                "libworks-plugin $plugin_version is already in $published, and a published version never changes: bump plugin_version")
+    }
+}
