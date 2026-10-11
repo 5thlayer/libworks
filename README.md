@@ -1,6 +1,6 @@
 # libworks
 
-The GitHub template every 5thlayer Library starts from (FactoryWorks ADR-0090). A Library is a 5thlayer mod the FactoryWorks Pack consumes as a pinned local jar.
+The GitHub template every 5thlayer Library starts from (FactoryWorks ADR-0090). A Library is a 5thlayer mod its Consumers, other Libraries or a pack, read from the local maven repository by version.
 
 libworks is becoming a dependency (ADR-0128, #8). It carries `runtime/`, a small mod (id `libworks`) Modules nest: the shared "Works" creative tab and transfer helpers (`docs/runtime.md`); and `plugin/`, the Gradle convention plugin every Module applies, with the scripts and the CI it calls (`docs/plugin.md`, ADR 0003). The template below is a NeoForge mod named `examplelib` whose build applies that plugin, passes its own tests, and does nothing else.
 

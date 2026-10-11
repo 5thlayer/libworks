@@ -4,7 +4,7 @@
 #       uses: 5thlayer/libworks/.github/workflows/module-ci.yml@plugin-v<version>
 #       with:
 #         plugin-version: <version>
-# It never publishes outside the runner: a jar reaches the Pack only through a maintainer's ~/.m2.
+# It never publishes outside the runner: a jar reaches a Consumer only through a maintainer's ~/.m2.
 name: Module CI
 
 on:
