@@ -102,8 +102,8 @@ class ModulePluginTest {
     void nestsTheRuntimeInItsRange() throws IOException {
         buildScript("runtime = '0.1.2'");
         String out = build("-q", "declared").getOutput();
-        assertTrue(out.contains("implementation io.github.5thlayer:libworks-runtime strictly=[0.1.2,1.0) prefer=0.1.2"), out);
-        assertTrue(out.contains("jarJar io.github.5thlayer:libworks-runtime strictly=[0.1.2,1.0) prefer=0.1.2"), out);
+        assertTrue(out.contains("implementation io.github.5thlayer:libworks-runtime strictly=[0.1.2,0.2) prefer=0.1.2"), out);
+        assertTrue(out.contains("jarJar io.github.5thlayer:libworks-runtime strictly=[0.1.2,0.2) prefer=0.1.2"), out);
     }
 
     @Test

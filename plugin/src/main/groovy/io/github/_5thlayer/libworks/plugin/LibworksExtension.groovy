@@ -34,11 +34,13 @@ class LibworksExtension {
 
     String getRuntime() { runtime }
 
-    /** Nests libworks-runtime from this version up to the next major (docs/runtime.md). */
+    /** Nests libworks-runtime from this version up to the next breaking one, ADR 0001: the next minor below 1.0, the next major from it (docs/runtime.md). */
     void setRuntime(String version) {
         if (runtime) throw new GradleException("libworks: runtime is set once, and is already $runtime")
         runtime = version
-        def range = "[$version,1.0)".toString()
+        def parts = version.tokenize('.')*.toInteger()
+        def ceiling = parts[0] == 0 ? "0.${parts[1] + 1}" : "${parts[0] + 1}.0"
+        def range = "[$version,$ceiling)".toString()
         def dependencies = project.dependencies
         ['implementation', 'jarJar'].each { configuration ->
             dependencies.add(configuration, 'io.github.5thlayer:libworks-runtime') {

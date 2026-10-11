@@ -13,9 +13,9 @@
 repositories { mavenLocal() }
 
 dependencies {
-    implementation 'io.github.5thlayer:libworks-runtime:[0.1.0,1.0)'
+    implementation 'io.github.5thlayer:libworks-runtime:[0.1.0,0.2)'
     jarJar(implementation('io.github.5thlayer:libworks-runtime')) {
-        version { strictly '[0.1.0,1.0)'; prefer '0.1.0' }
+        version { strictly '[0.1.0,0.2)'; prefer '0.1.0' }
     }
 }
 ```
