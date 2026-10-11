@@ -45,7 +45,9 @@ sed -i.bak -e '/^    "scripts\//d' -e '/^    "plugin\//d' REUSE.toml
 rm settings.gradle.bak build.gradle.bak REUSE.toml.bak
 cat > .github/workflows/ci.yml <<YAML
 # Builds and tests every push through the CI every Module shares, at the tag of the plugin
-# build.gradle applies: the two versions move together (libworks ADR 0003). It never publishes.
+# build.gradle applies: the two versions move together (libworks ADR 0003). It never publishes:
+# a Library's jar reaches a Consumer only through ~/.m2, and Modrinth and CurseForge, only from a
+# maintainer's machine (docs/agents/releases.md).
 name: CI
 
 on:
