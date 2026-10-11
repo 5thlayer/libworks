@@ -6,6 +6,9 @@
 |---|---|
 | `io.github._5thlayer.libworks.WorksTab` | `KEY`, the `ResourceKey<CreativeModeTab>` of `libworks:works`, the one "Works" tab the whole -works suite shares. Its icon is vanilla's iron pickaxe, so it exists without any Module. |
 | `io.github._5thlayer.libworks.transfer.GuardedResourceHandler` | A transfer face with per-slot rules. NeoForge's `DelegatingResourceHandler` sends slot-less insert and extract past them; this loops through its own slots instead. |
+| `io.github._5thlayer.libworks.ghost.Ghost` | `Ghost(ItemStack stack, int x, int y)`: a faded item and where it is drawn, in screen coordinates. |
+| `io.github._5thlayer.libworks.ghost.Ghosts` | A screen's ghosts, the items an empty slot would take: positions registered once, each with its candidates, which cycle one a second. No client types, so a game test reads it. |
+| `io.github._5thlayer.libworks.ghost.client.GhostDraw` | `draw(graphics, font, ghost)`, the one look for the whole suite. Client-only. |
 
 ## Using it from a Module
 
@@ -38,6 +41,31 @@ modBus.addListener((BuildCreativeModeTabContentsEvent event) -> {
 ```
 
 A Module adds its items in one block, in the order it wants them. The order between Modules follows the mod load order, which a Module does not control and must not depend on. A Module that needs its items elsewhere as well adds them to a vanilla tab in the same listener.
+
+## Ghosts
+
+A ghost is a faded item in an empty slot that shows what goes there. A screen owns one `Ghosts`, registers its positions once, and draws what `shown` returns:
+
+```java
+private final Ghosts ghosts = new Ghosts(() -> leftPos, () -> topPos);
+
+// in init(), or the constructor once the menu's slots exist
+ghosts.add(menu.slots.get(FUEL_SLOT));                                   // every item the slot's mayPlace takes
+ghosts.add(menu.slots.get(INPUT_SLOT), () -> Ghosts.of(sizedIngredient)); // an ingredient's members, at its count
+ghosts.add(headX, headY, () -> List.of(product));                        // not a slot: screen coordinates
+
+// in the screen's extract
+for (Ghost ghost : ghosts.shown(Util.getMillis())) {
+    GhostDraw.draw(graphics, font, ghost);
+}
+
+// in EMI's or JEI's glue
+ghosts.at(mouseX, mouseY, Util.getMillis()).map(Ghost::stack);
+```
+
+A slot's ghost stands at the slot's `x` and `y` plus the suppliers' corner, read each time, so it follows a screen that moves on resize; a `new Ghosts()` has the corner at 0. A slot that holds an item, or is inactive, shows no ghost. A position with several candidates shows one for `Ghosts.CYCLE_MILLIS` (1000) and then the next, picked by the `millis` passed in; `Ghosts` never reads the clock. `at` takes the mouse as `double`, which an `int` caller passes as is.
+
+`add(Slot)` scans the item registry once, on first use, and keeps the result. Any other candidates that cost a scan go through `Ghosts.cached(...)`. What a slot takes is the Module's to decide, and EMI and JEI glue stays in the Module: the runtime depends on neither.
 
 ## Releasing it
 

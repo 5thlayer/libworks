@@ -4,6 +4,7 @@ Written for Consumers: what a mod building against Example Library can use, or w
 
 ## Unreleased
 
+- `libworks-runtime` 0.1.1: `io.github._5thlayer.libworks.ghost` shows the faded item an empty slot would take (`docs/runtime.md`, #16). A screen owns a `Ghosts`, registers its slots (`add(Slot)` for every item the slot's `mayPlace` takes) or any screen position with its candidates, draws `shown(millis)` with `ghost.client.GhostDraw.draw`, and asks `at(mouseX, mouseY, millis)` what is under the mouse for EMI and JEI. `Ghosts.of(SizedIngredient)` gives an ingredient's members at its count, and a position cycles its candidates once a second.
 - `libworks-plugin` 0.1.2: `buildGametestStructures` refuses, naming the file, to overwrite a `platform.nbt` the Module committed that differs from the default one.
 - `libworks-plugin` 0.1.2: the plugin no longer leaves an unfiltered `mavenLocal()` repository on the Module.
 - `libworks-plugin` 0.1.2: `neoforge.mods.toml` can name the runtime's range as `${libworks_runtime_range}`, such as `[0.1.0,0.2)`, when `runtime` is set.
