@@ -24,7 +24,7 @@ class LibworksExtension {
         upstreams << upstream
         def range = upstream.range
         def lower = upstream.lowerBound
-        project.dependencies.add('implementation', "${upstream.group}:${upstream.name}") {
+        project.dependencies.add('implementation', "io.github.5thlayer:${upstream.name}") {
             version {
                 strictly range
                 prefer lower

@@ -82,12 +82,12 @@ class ModulePluginTest {
     void listsEachUpstreamForCi() throws IOException {
         buildScript("""
                 upstream('groundworks') { range = '[0.5.4,0.6)' }
-                upstream('craftworks') { range = '[0.2.0,0.3)'; repo = '5thlayer/craft'; tagPrefix = 'v' }
+                upstream('craftworks') { range = '[0.2.0,0.3)'; tagPrefix = 'v' }
                 """);
         String out = build("-q", "libworksUpstreams").getOutput();
         assertEquals("""
                 5thlayer/groundworks groundworks-v0.5.4 0.5.4
-                5thlayer/craft v0.2.0 0.2.0
+                5thlayer/craftworks v0.2.0 0.2.0
                 """, out.replace("\r", ""));
     }
 

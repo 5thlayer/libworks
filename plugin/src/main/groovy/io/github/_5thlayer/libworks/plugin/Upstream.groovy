@@ -7,19 +7,15 @@ import org.gradle.api.GradleException
  * checkout is checked against, and what CI builds from its tag (ADR 0003).
  */
 class Upstream {
-    /** The artifact, which is also the checkout's directory name and the repo's by default. */
+    /** The artifact, which is also the checkout's directory name and the repo's under 5thlayer. */
     final String name
-    String group = 'io.github.5thlayer'
     /** A Maven range, such as {@code [0.5.4,0.6)}, with an inclusive lower bound. */
     String range
     String tagPrefix
-    /** The GitHub repo CI checks the tag out of. */
-    String repo
 
     Upstream(String name) {
         this.name = name
         this.tagPrefix = "$name-v"
-        this.repo = "5thlayer/$name"
     }
 
     private List<String> parts() {
@@ -28,6 +24,9 @@ class Upstream {
                 "libworks: upstream '$name' range '$range' is not a range with an inclusive lower bound, such as [0.5.4,0.6)")
         [m.group(1), m.group(2), m.group(3)]
     }
+
+    /** The GitHub repo CI checks the tag out of. */
+    String getRepo() { "5thlayer/$name" }
 
     /** The lowest version in range: the one preferred, and the one CI builds. */
     String getLowerBound() { parts()[0] }
