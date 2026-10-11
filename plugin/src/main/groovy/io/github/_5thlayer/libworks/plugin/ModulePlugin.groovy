@@ -100,11 +100,11 @@ class ModulePlugin implements Plugin<Project> {
         project.tasks.named('test') { useJUnitPlatform() }
     }
 
-    /** The jar carries LICENSE, every file under LICENSES/ and NOTICE, those the repo has (ADR 0003). */
+    /** The jar carries LICENSE, every file under LICENSES/ and NOTICE if the repo has one (ADR 0003). */
     private static void configureLicensing(Project project) {
         def root = project.rootDir
         def licensing = { ->
-            def names = ['LICENSE', 'NOTICE'].findAll { new File(root, it).isFile() }
+            def names = ['LICENSE'] + (new File(root, 'NOTICE').isFile() ? ['NOTICE'] : [])
             def dir = new File(root, 'LICENSES')
             if (dir.isDirectory()) dir.eachFileRecurse(groovy.io.FileType.FILES) { names << root.toPath().relativize(it.toPath()).toString().replace('\\', '/') }
             names.sort()
@@ -118,8 +118,6 @@ class ModulePlugin implements Plugin<Project> {
             doLast {
                 def names = new java.util.zip.ZipFile(jarFile.get().asFile).withCloseable { zip -> zip.entries()*.name as Set }
                 def expected = licensing()
-                if (!expected.contains('LICENSE') && !expected.any { it.startsWith('LICENSES/') }) throw new GradleException(
-                        "${project.rootDir} has neither LICENSE nor LICENSES/, so the jar carries no licence")
                 def missing = expected.findAll { !names.contains(it) }
                 if (missing) throw new GradleException("${jarFile.get().asFile.name} lacks its licensing: ${missing.join(', ')}")
             }

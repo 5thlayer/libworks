@@ -98,9 +98,9 @@ def changelog(version):
 
 
 def licensing():
-    """What the plugin's checkJarLicensing requires of the jar: LICENSE, NOTICE and every file under
-    LICENSES/, those the Module has."""
-    names = [name for name in ["LICENSE", "NOTICE"] if (ROOT / name).is_file()]
+    """What the plugin's checkJarLicensing requires of the jar: LICENSE, every file under LICENSES/
+    and NOTICE if the Module has one (ADR 0003)."""
+    names = ["LICENSE"] + (["NOTICE"] if (ROOT / "NOTICE").is_file() else [])
     if (ROOT / "LICENSES").is_dir():
         names += [p.relative_to(ROOT).as_posix() for p in (ROOT / "LICENSES").rglob("*") if p.is_file()]
     return sorted(names)

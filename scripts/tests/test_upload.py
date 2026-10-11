@@ -154,6 +154,11 @@ class Upload(unittest.TestCase):
                 self.publish("0.3.9", jar(**{"LICENSES/Apache-2.0.txt": "Apache", "NOTICE": "Notice", lacking: None}))
                 self.assertRefusedBeforeAnyRequest(self.upload("0.3.9"), lacking)
 
+    def test_the_jar_carries_license_even_when_the_module_lacks_it(self):
+        (self.root / "LICENSE").unlink()
+        self.publish("0.3.9", jar(LICENSE=None))
+        self.assertRefusedBeforeAnyRequest(self.upload("0.3.9"), "LICENSE")
+
     def test_a_missing_token_is_fetched_through_op_run(self):
         # A stand-in for the 1Password CLI, first on PATH: it fills each op:// reference in the env
         # file with a token, as `op run --env-file=<file> -- <command>` does, and runs the command.
