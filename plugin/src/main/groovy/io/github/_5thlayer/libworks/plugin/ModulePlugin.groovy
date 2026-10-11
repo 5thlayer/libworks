@@ -184,11 +184,13 @@ class ModulePlugin implements Plugin<Project> {
                 def path = project.providers.gradleProperty("${upstream.name}Dir").getOrElse("~/minecraft_mods/${upstream.name}")
                 def dir = new File(path.replaceFirst('^~', System.getProperty('user.home'))).canonicalFile
                 def properties = new File(dir, 'gradle.properties')
-                if (!properties.isFile()) return
+                if (!properties.isFile()) throw new GradleException(
+                        "-PsiblingBuilds: ${upstream.name} has no gradle.properties in $dir; check it out there or name it with -P${upstream.name}Dir")
                 def props = new Properties()
                 properties.withInputStream { props.load(it) }
                 def version = props.getProperty('mod_version')
-                if (version && !upstream.contains(version)) throw new GradleException(
+                if (!version) throw new GradleException("-PsiblingBuilds: ${upstream.name}'s $properties names no mod_version")
+                if (!upstream.contains(version)) throw new GradleException(
                         "-PsiblingBuilds: ${upstream.name} $version in $dir is outside ${upstream.range}, which the Module requires" +
                                 " and which would refuse it at load. A minor of ${upstream.name} needs this range moved in this checkout too.")
             }

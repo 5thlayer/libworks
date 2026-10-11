@@ -144,6 +144,22 @@ class ModulePluginTest {
     }
 
     @Test
+    void refusesAMissingSiblingCheckout() throws IOException {
+        buildScript("upstream('groundworks') { range = '[0.5.4,0.6)' }");
+        String out = fail("-PsiblingBuilds", "-PgroundworksDir=" + elsewhere.resolve("nowhere"), "help").getOutput();
+        assertTrue(out.contains("no gradle.properties"), out);
+    }
+
+    @Test
+    void refusesASiblingCheckoutWithoutAVersion() throws IOException {
+        buildScript("upstream('groundworks') { range = '[0.5.4,0.6)' }");
+        Path checkout = Files.createDirectories(elsewhere.resolve("groundworks"));
+        Files.writeString(checkout.resolve("gradle.properties"), "mod_id = groundworks\n");
+        String out = fail("-PsiblingBuilds", "-PgroundworksDir=" + checkout, "help").getOutput();
+        assertTrue(out.contains("names no mod_version"), out);
+    }
+
+    @Test
     void refusesAVersionAlreadyInMavenLocal() throws IOException {
         buildScript("");
         Path repo = elsewhere.resolve("m2");
