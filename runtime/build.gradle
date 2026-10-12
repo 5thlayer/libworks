@@ -47,6 +47,12 @@ neoForge {
             sourceSet sourceSets.gametest
         }
     }
+
+    // JUnit under FML, which a FluidStack needs to exist.
+    unitTest {
+        enable()
+        testedMod = mods.libworks
+    }
 }
 
 // Same report check as the template's: a run that ran no test is not a pass.
@@ -66,7 +72,22 @@ tasks.named('runGameTestServer') {
     }
 }
 
+repositories {
+    // Jade, which the machine providers build against; the runtime runs without it (ADR 0005).
+    maven {
+        url = 'https://api.modrinth.com/maven'
+        content { includeGroup 'maven.modrinth' }
+    }
+}
+
+// The Jade the Modules build against. compileOnly: the game test server runs without it, which keeps
+// the runtime from loading a Jade class of its own accord (ADR 0005).
+def jade = 'maven.modrinth:jade:26.1.11+neoforge'
+
 dependencies {
+    compileOnly jade
+    testImplementation jade
+
     testImplementation platform('org.junit:junit-bom:5.10.2')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'

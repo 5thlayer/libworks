@@ -10,7 +10,7 @@ version = "${version}"
 displayName = "libworks"
 authors = "5thlayer"
 description = '''
-The code the 5thlayer Modules share: the Works creative tab and the transfer helpers. Nested inside each Module.
+The code the 5thlayer Modules share: the Works creative tab, the transfer helpers, ghosts, and the machine screen look and Jade view. Nested inside each Module.
 '''
 
 [[dependencies.libworks]]

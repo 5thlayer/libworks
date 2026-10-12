@@ -8,7 +8,12 @@
 | `io.github._5thlayer.libworks.transfer.GuardedResourceHandler` | A transfer face with per-slot rules. NeoForge's `DelegatingResourceHandler` sends slot-less insert and extract past them; this loops through its own slots instead. |
 | `io.github._5thlayer.libworks.ghost.Ghost` | `Ghost(ItemStack stack, int x, int y)`: a faded item and where it is drawn, in screen coordinates. |
 | `io.github._5thlayer.libworks.ghost.Ghosts` | A screen's ghosts, the items an empty slot would take: positions registered once, each with its candidates, which cycle one a second. No client types, so a game test reads it. |
-| `io.github._5thlayer.libworks.ghost.client.GhostDraw` | `draw(graphics, font, ghost)`, the one look for the whole suite. Client-only. |
+| `io.github._5thlayer.libworks.ghost.client.GhostDraw` | `draw(graphics, font, ghost)`, the one look for the whole suite, and `tooltip(...)`, a ghost's item tooltip. Client-only. |
+| `io.github._5thlayer.libworks.machine.client.MachineDraw` | A machine screen's one stand-in look: the panel, recesses, bars, gauges, the fluid tooltip, and text cut to fit. Client-only. |
+| `io.github._5thlayer.libworks.machine.Tank` | `Tank(id, fluid, capacity, titleKey)`: one of a machine's tanks as Jade shows it. No Jade or client types. |
+| `io.github._5thlayer.libworks.machine.jade.MachineReport` | A machine's lines in Jade, such as its status line, from data the server sends. Its `Client` draws them. Jade `compileOnly` (ADR 0005). |
+| `io.github._5thlayer.libworks.machine.jade.MachineItems` | A machine's items in Jade, slot by slot, as icons with counts through its `Client`. |
+| `io.github._5thlayer.libworks.machine.jade.MachineTanks` | A machine's tanks in Jade, one group each, titled through its `Client`. |
 
 ## Using it from a Module
 
@@ -66,6 +71,72 @@ ghosts.at(mouseX, mouseY, Util.getMillis()).map(Ghost::stack);
 A ghost stands at the slot's `x` and `y`, or the `x` and `y` given, plus the suppliers' corner, read each time, so it follows a screen that moves on resize; a `new Ghosts()` has the corner at 0, so its positions are screen coordinates. `Ghost`s are in screen coordinates, so `GhostDraw.draw` goes in a pass drawn in them (`extractBackground`, or after `super.render`), not in `extractLabels`, which is translated to the panel's corner. A slot that holds an item, or is inactive, shows no ghost. A position with several candidates shows one for `Ghosts.CYCLE_MILLIS` (1000) and then the next, picked by the `millis` passed in; `Ghosts` never reads the clock. `at` takes the mouse as `double`, which an `int` caller passes as is.
 
 `add(Slot)` scans the item registry once, on first use, and keeps the result. Any other candidates that cost a scan go through `Ghosts.cached(...)`. What a slot takes is the Module's to decide, and EMI and JEI glue stays in the Module: the runtime depends on neither. Jade is the one compat mod the runtime builds against, and only a Module's own plugin loads it (ADR 0005).
+
+## Machine screens
+
+A machine screen draws its stand-in look with `MachineDraw`, all in screen coordinates, so in `extractBackground` or after `super.render`:
+
+```java
+@Override
+public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+    super.extractBackground(graphics, mouseX, mouseY, partialTick); // dims the world behind
+    MachineDraw.panel(graphics, font, leftPos, topPos, imageWidth, imageHeight, menu.slots, ghosts);
+    MachineDraw.bar(graphics, font, leftPos + 28, topPos + 20, 80, MachineDraw.BAR_HEIGHT, burnt, BURN, burnLabel);
+    MachineDraw.gauge(graphics, font, leftPos + 28, topPos + 38, 80, menu.water(), menu.waterCapacity());
+}
+
+@Override
+protected void extractLabels(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
+    super.extractLabels(graphics, mouseX, mouseY);
+    graphics.text(font, MachineDraw.fitted(font, status, imageWidth - 2 * MachineDraw.MARGIN), MachineDraw.MARGIN, STATUS_Y, MachineDraw.TEXT, false);
+}
+
+@Override
+protected void extractTooltip(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
+    super.extractTooltip(graphics, mouseX, mouseY);
+    Optional<Ghost> ghost = ghosts.at(mouseX, mouseY, Util.getMillis());
+    if (ghost.isPresent()) {
+        GhostDraw.tooltip(graphics, font, ghost.get(), mouseX, mouseY);
+    } else if (MachineDraw.over(leftPos + 28, topPos + 38, 80, MachineDraw.BAR_HEIGHT, mouseX, mouseY)) {
+        MachineDraw.fluidTooltip(graphics, font, menu.water(), menu.waterCapacity(), mouseX, mouseY);
+    }
+}
+```
+
+`panel` recesses only active slots and draws the ghosts over them; the screen keeps its own `Ghosts`. A bar's `fraction` is clamped to 0–1, and its label, white ringed in black so it reads over any fill, is drawn centred when it fits the width less 4 px and the bar is at least `BAR_HEIGHT` (12) tall; an empty `Component` draws none. A gauge is always `BAR_HEIGHT` tall, tiles the fluid's still texture tinted as in the world over the filled part, and writes the amount in mB when it fits; an empty stack draws only the recess. The runtime owns only the fluid tooltip's two strings, `libworks.machine.fluid_empty` and `libworks.machine.fluid`; bar labels come from the Module. `wholeOnHover(graphics, font, line, width, mouseX, mouseY)` shows a line `fitted` cut, whole.
+
+## Machines in Jade
+
+The runtime builds against Jade but registers nothing (ADR 0005). A Module's own `@WailaPlugin` builds the providers, with uids in its own namespace, and registers them; the runtime's game-test server runs without Jade, which keeps the runtime from loading a Jade class itself.
+
+```java
+@WailaPlugin
+public class BoilerJadePlugin implements IWailaPlugin {
+
+    private static final Identifier ITEMS = id("boiler_items");
+    private static final Identifier TANKS = id("boiler_tanks");
+    private static final MachineReport<BoilerBlockEntity, BoilerStatus> REPORT =
+            new MachineReport<>(id("boiler"), BoilerBlockEntity.class, BoilerBlockEntity::status, BoilerStatus.STREAM_CODEC);
+
+    @Override
+    public void register(IWailaCommonRegistration registration) {
+        registration.registerBlockDataProvider(REPORT, BoilerBlockEntity.class);
+        registration.registerItemStorage(new MachineItems(ITEMS), BoilerBlockEntity.class);
+        registration.registerFluidStorage(new MachineTanks<>(TANKS, BoilerBlockEntity.class, boiler -> List.of(
+                new Tank("water", boiler.water(), BoilerSpec.WATER, "wireworks.boiler.tank.water"),
+                new Tank("steam", boiler.steam(), BoilerSpec.STEAM, "wireworks.boiler.tank.steam"))), BoilerBlockEntity.class);
+    }
+
+    @Override
+    public void registerClient(IWailaClientRegistration registration) {
+        registration.registerBlockComponent(new MachineReport.Client<>(REPORT, (status, tooltip) -> tooltip.add(status.line())), BoilerBlock.class);
+        registration.registerItemStorageClient(new MachineItems.Client(ITEMS));
+        registration.registerFluidStorageClient(new MachineTanks.Client(TANKS));
+    }
+}
+```
+
+Each provider's server half names no client type and none of Jade's drawing types, so a dedicated server with Jade never loads them; a `Client` takes its server half's uid. `MachineReport` sends nothing for a block entity of another type. `MachineItems` lists the item capability's non-empty slots. `MachineTanks` gives each `Tank` its own group, where Jade's own reading of the fluid capability would merge them, titled from the tank's `titleKey`, or Jade's untitled view when it is `null`. The Module's mods.toml lists Jade as optional, if at all; the runtime's does not name it.
 
 ## Language
 

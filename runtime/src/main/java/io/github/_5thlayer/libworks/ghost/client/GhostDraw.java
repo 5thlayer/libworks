@@ -38,4 +38,9 @@ public final class GhostDraw {
             graphics.text(font, count, x + COUNT_RIGHT - font.width(count), y + COUNT_Y, COUNT_COLOR, true);
         }
     }
+
+    /** The ghost's item tooltip, as over a real stack. */
+    public static void tooltip(GuiGraphicsExtractor graphics, Font font, Ghost ghost, int mouseX, int mouseY) {
+        graphics.setTooltipForNextFrame(font, ghost.stack(), mouseX, mouseY);
+    }
 }

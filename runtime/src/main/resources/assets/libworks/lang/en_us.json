@@ -1,3 +1,5 @@
 {
-  "itemGroup.libworks.works": "Works"
+  "itemGroup.libworks.works": "Works",
+  "libworks.machine.fluid_empty": "Empty",
+  "libworks.machine.fluid": "%s / %s mB"
 }
