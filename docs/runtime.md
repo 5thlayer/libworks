@@ -8,7 +8,7 @@
 | `io.github._5thlayer.libworks.transfer.GuardedResourceHandler` | A transfer face with per-slot rules. NeoForge's `DelegatingResourceHandler` sends slot-less insert and extract past them; this loops through its own slots instead. |
 | `io.github._5thlayer.libworks.ghost.Ghost` | `Ghost(ItemStack stack, int x, int y)`: a faded item and where it is drawn, in screen coordinates. |
 | `io.github._5thlayer.libworks.ghost.Ghosts` | A screen's ghosts, the items an empty slot would take: positions registered once, each with its candidates, which cycle one a second. No client types, so a game test reads it. |
-| `io.github._5thlayer.libworks.ghost.GhostScreen` | `ghosts()`: a screen that shows `Ghosts`. The runtime offers the ghost under the mouse to EMI, so a Module's screen implements it and registers no EMI provider for its ghosts. No EMI or client types. |
+| `io.github._5thlayer.libworks.ghost.GhostScreen` | `ghosts()`: a screen that shows `Ghosts`, and `ghostAt(mouseX, mouseY)`, the ghost under the mouse now, `ghosts()`' by default. The runtime offers what `ghostAt` finds to EMI, so a Module's screen implements it and registers no EMI provider for its ghosts. No EMI or client types. |
 | `io.github._5thlayer.libworks.ghost.emi.GhostsEmiPlugin` | The runtime's `@EmiEntrypoint`: every `GhostScreen`'s ghosts as EMI's hovered stack, not clickable. EMI `compileOnly`, loaded only by EMI (ADR 0007). |
 | `io.github._5thlayer.libworks.ghost.client.GhostDraw` | `draw(graphics, font, ghost)`, the one look for the whole suite, and `tooltip(...)`, a ghost's item tooltip. Client-only. |
 | `io.github._5thlayer.libworks.machine.client.MachineDraw` | A machine screen's one stand-in look: the panel, recesses, bars, gauges, the fluid tooltip, and text cut to fit. Client-only. |
@@ -31,7 +31,7 @@ dependencies {
 }
 ```
 
-A Module that uses `libworks.machine` needs 0.1.2 or later, one that calls `fluidTooltip` with a title 0.1.4 or later, one that uses `FluidContainers` 0.1.5 or later, and one that uses `GhostScreen` 0.1.6 or later, so its range starts there. The range is what makes two Modules nesting different patches load one copy: FML keeps the highest version in range. A breaking change bumps the minor, which leaves the range, as ADR 0001 sets for every version here.
+A Module that uses `libworks.machine` needs 0.1.2 or later, one that calls `fluidTooltip` with a title 0.1.4 or later, one that uses `FluidContainers` 0.1.5 or later, one that uses `GhostScreen` 0.1.6 or later, and one that overrides its `ghostAt` 0.1.7 or later, so its range starts there. The range is what makes two Modules nesting different patches load one copy: FML keeps the highest version in range. A breaking change bumps the minor, which leaves the range, as ADR 0001 sets for every version here.
 
 A modpack pins the Module's jar, which carries the nested jar; nothing else is installed.
 
@@ -67,7 +67,7 @@ for (Ghost ghost : ghosts.shown(Util.getMillis())) {
     GhostDraw.draw(graphics, font, ghost);
 }
 
-// in JEI's glue; EMI's is the runtime's, through GhostScreen
+// in JEI's glue; EMI's is the runtime's, through GhostScreen, whose ghostAt is this
 ghosts.at(mouseX, mouseY, Util.getMillis()).map(Ghost::stack);
 ```
 
@@ -91,9 +91,19 @@ public class BoilerScreen extends AbstractContainerScreen<BoilerMenu> implements
 }
 ```
 
-The runtime's own `@EmiEntrypoint`, `GhostsEmiPlugin`, registers one generic stack provider: over a `GhostScreen`, the ghost `ghosts().at` finds at `Util.getMillis()` is EMI's hovered stack, one of its item whatever count it is drawn with, so the recipe and usage keys work on it as on a real stack. It is not clickable, so a left click goes past it to the empty slot under it, where a stack in hand goes in; a clickable one would have EMI take the click to show recipes. Off every ghost it hands EMI nothing, and EMI's own slot lookup answers for a real stack.
+A screen with a ghost beyond `ghosts()`, such as Craftworks' Assembler, whose Held recipe's product stands at the panel's head drawn as the item itself and only hit-tested, overrides `ghostAt` to find that one too:
 
-The Module registers no stack provider for these ghosts. EMI asks a screen's own providers before the generic one, so a Module's old provider for the same screen keeps answering until the Module drops it: drop it, with its `new EmiStackInteraction(...)`, when moving onto `GhostScreen`. `GhostScreen` names no EMI type, and only EMI loads `GhostsEmiPlugin`, by its annotation, so a screen implements it whether or not EMI is installed and the runtime loads without EMI (ADR 0007). The runtime's mods.toml has no dependency on EMI. JEI needs no such provider: it never takes a click on an ingredient a screen's handler names, so its glue, with `ghosts.at`, stays in the Module.
+```java
+@Override
+public Optional<Ghost> ghostAt(double mouseX, double mouseY) {
+    Optional<Ghost> over = head.at(mouseX, mouseY, Util.getMillis());
+    return over.isPresent() ? over : GhostScreen.super.ghostAt(mouseX, mouseY);
+}
+```
+
+The runtime's own `@EmiEntrypoint`, `GhostsEmiPlugin`, registers one generic stack provider: over a `GhostScreen`, the ghost its `ghostAt` finds is EMI's hovered stack, one of its item whatever count it is drawn with, so the recipe and usage keys work on it as on a real stack. It is not clickable, so a left click goes past it to the empty slot under it, where a stack in hand goes in; a clickable one would have EMI take the click to show recipes. Off every ghost it hands EMI nothing, and EMI's own slot lookup answers for a real stack.
+
+The Module registers no stack provider for these ghosts. EMI asks a screen's own providers before the generic one, so a Module's old provider for the same screen keeps answering until the Module drops it: drop it, with its `new EmiStackInteraction(...)`, when moving onto `GhostScreen`. `GhostScreen` names no EMI type, and only EMI loads `GhostsEmiPlugin`, by its annotation, so a screen implements it whether or not EMI is installed and the runtime loads without EMI (ADR 0007). The runtime's mods.toml has no dependency on EMI. JEI needs no such provider: it never takes a click on an ingredient a screen's handler names, so its glue stays in the Module, and asks the screen's `ghostAt`.
 
 Jade and EMI are the compat mods the runtime builds against, both `compileOnly` at the versions the Modules build against: only a Module's own plugin loads Jade's providers (ADR 0006), and only EMI loads the runtime's EMI plugin (ADR 0007).
 

@@ -3,6 +3,7 @@
 
 package io.github._5thlayer.libworks.ghost.emi;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -10,9 +11,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 import dev.emi.emi.api.stack.EmiStack;
 import dev.emi.emi.api.stack.EmiStackInteraction;
+import io.github._5thlayer.libworks.ghost.Ghost;
 import io.github._5thlayer.libworks.ghost.GhostScreen;
 import io.github._5thlayer.libworks.ghost.Ghosts;
 import net.minecraft.world.level.material.Fluids;
@@ -36,12 +41,32 @@ class GhostsEmiPluginTest {
     @Test
     void offEveryGhostIsNothing() {
         GhostScreen screen = Ghosts::new;
-        assertSame(EmiStackInteraction.EMPTY, GhostsEmiPlugin.at(screen, 30, 40, 0));
+        assertSame(EmiStackInteraction.EMPTY, GhostsEmiPlugin.at(screen, 30, 40));
+    }
+
+    /** A screen with a ghost beyond its {@code ghosts()}, such as one drawn as the item itself, answers through its own. */
+    @Test
+    void itAsksTheScreensGhostAt() {
+        List<String> asked = new ArrayList<>();
+        GhostScreen screen = new GhostScreen() {
+            @Override
+            public Ghosts ghosts() {
+                return new Ghosts();
+            }
+
+            @Override
+            public Optional<Ghost> ghostAt(double mouseX, double mouseY) {
+                asked.add(mouseX + "," + mouseY);
+                return Optional.empty();
+            }
+        };
+        assertSame(EmiStackInteraction.EMPTY, GhostsEmiPlugin.at(screen, 30, 40));
+        assertEquals(List.of("30.0,40.0"), asked);
     }
 
     @Test
     void aScreenThatIsNoGhostScreenIsNothing() {
-        assertSame(EmiStackInteraction.EMPTY, GhostsEmiPlugin.at(new Object(), 30, 40, 0));
+        assertSame(EmiStackInteraction.EMPTY, GhostsEmiPlugin.at(new Object(), 30, 40));
     }
 
     /** A Module's screen implements it whether or not EMI is installed, so it names no EMI type. */

@@ -12,10 +12,12 @@ Assembler still had it (#23).
 
 **Decision.** libworks-runtime takes EMI `compileOnly`, at the version the Modules build against, and
 has an `@EmiEntrypoint` of its own, `ghost.emi.GhostsEmiPlugin`, which registers one generic stack
-provider: on a screen that implements `ghost.GhostScreen`, the ghost under the mouse, as one of its
-item, not clickable. A Module's screen implements `GhostScreen` and registers no provider for its
-ghosts. `GhostScreen` names no EMI type, and only EMI loads the plugin, by its annotation, so the
-runtime runs without EMI; its game-test server, which has no EMI, keeps this true, as for Jade.
+provider: on a screen that implements `ghost.GhostScreen`, the ghost its `ghostAt` finds under the
+mouse, as one of its item, not clickable. `ghostAt` reads the screen's `ghosts()` unless the screen
+has a ghost beyond them to find, as Craftworks' Assembler's head is. A Module's screen implements
+`GhostScreen` and registers no provider for its ghosts. `GhostScreen` names no EMI type, and only EMI
+loads the plugin, by its annotation, so the runtime runs without EMI; its game-test server, which has
+no EMI, keeps this true, as for Jade.
 
 **Considered.** A helper each Module's plugin calls: one copy of the interaction, but still a line in
 each Module that a new machine can leave out or write by hand. A provider per screen class: EMI asks
