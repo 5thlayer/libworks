@@ -10,6 +10,7 @@
 | `io.github._5thlayer.libworks.ghost.Ghosts` | A screen's ghosts, the items an empty slot would take: positions registered once, each with its candidates, which cycle one a second. No client types, so a game test reads it. |
 | `io.github._5thlayer.libworks.ghost.client.GhostDraw` | `draw(graphics, font, ghost)`, the one look for the whole suite, and `tooltip(...)`, a ghost's item tooltip. Client-only. |
 | `io.github._5thlayer.libworks.machine.client.MachineDraw` | A machine screen's one stand-in look: the panel, recesses, bars, gauges, the fluid tooltip, and text cut to fit. Client-only. |
+| `io.github._5thlayer.libworks.machine.FluidContainers` | A machine's drain and fill slots: `drain` and `fill` move a whole container of fluid between a tank and any fluid-capability item, and `holds` and `takes` are the slots' checks. No client types. |
 | `io.github._5thlayer.libworks.machine.Tank` | `Tank(id, fluid, capacity, titleKey)`: one of a machine's tanks as Jade shows it. No Jade or client types. |
 | `io.github._5thlayer.libworks.machine.jade.MachineReport` | A machine's lines in Jade, such as its status line, from data the server sends. Its `Client` draws them. Jade `compileOnly` (ADR 0006). |
 | `io.github._5thlayer.libworks.machine.jade.MachineItems` | A machine's items in Jade, slot by slot, as icons with counts through its `Client`. |
@@ -137,6 +138,26 @@ public class BoilerJadePlugin implements IWailaPlugin {
 ```
 
 Each provider's server half names no client type and none of Jade's drawing types, so a dedicated server with Jade never loads them; a `Client` takes its server half's uid. `MachineReport` sends nothing for a block entity of another type. `MachineItems` lists the item capability's non-empty slots. `MachineTanks` gives each `Tank` its own group, where Jade's own reading of the fluid capability would merge them, titled from the tank's `titleKey`, or Jade's untitled view when it is `null`. The Module's mods.toml lists Jade as optional, if at all; the runtime's does not name it.
+
+## Drain and fill slots
+
+A **drain slot** takes a filled container, a bucket or any item with NeoForge's fluid item capability (`Capabilities.Fluid.ITEM`), and empties it into a tank; a **fill slot** takes an empty one and fills it from a tank. Either way the container then goes to an output slot. `FluidContainers` does the move, in a machine's tick:
+
+```java
+ItemStack after = FluidContainers.drain(items.get(WATER_IN), items.get(BUCKETS_OUT), waterTank);
+if (after != null) {
+    items.get(WATER_IN).shrink(1);
+    items.set(BUCKETS_OUT, after);
+}
+
+// a fill slot: FluidContainers.fill(items.get(STEAM_IN), items.get(STEAM_OUT), steamTank, FluidResource.of(steam))
+
+// the slots' checks, such as in isItemValid
+case WATER_IN -> FluidContainers.holds(stack, fluid -> fluid.getFluid() == Fluids.WATER);
+case STEAM_IN -> FluidContainers.takes(stack, FluidResource.of(steam));
+```
+
+A container goes whole or not at all. `drain` and `fill` return null, and change nothing, while the tank has too little room or too little of the fluid for the whole container, while the output holds something the container can't stack onto, or when the stack is empty or no fluid container. They work on a copy of the two slots inside a transaction, so a machine's own slots need not be transactional, and they move one container a call: the caller takes one from the container's slot and sets the output to what was returned. `fill` draws only the fluid it names, whatever else the tank holds. `holds` is true for a container holding any fluid its predicate accepts; `takes` for an empty one that fluid can go into.
 
 ## Language
 
