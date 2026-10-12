@@ -67,8 +67,8 @@ for (Ghost ghost : ghosts.shown(Util.getMillis())) {
     GhostDraw.draw(graphics, font, ghost);
 }
 
-// in JEI's glue; EMI's is the runtime's, through GhostScreen, whose ghostAt is this
-ghosts.at(mouseX, mouseY, Util.getMillis()).map(Ghost::stack);
+// in JEI's glue, on a GhostScreen (below); EMI's glue is the runtime's
+screen.ghostAt(mouseX, mouseY).map(Ghost::stack);
 ```
 
 A ghost stands at the slot's `x` and `y`, or the `x` and `y` given, plus the suppliers' corner, read each time, so it follows a screen that moves on resize; a `new Ghosts()` has the corner at 0, so its positions are screen coordinates. `Ghost`s are in screen coordinates, so `GhostDraw.draw` goes in a pass drawn in them (`extractBackground`, or after `super.render`), not in `extractLabels`, which is translated to the panel's corner. A slot that holds an item, or is inactive, shows no ghost. A position with several candidates shows one for `Ghosts.CYCLE_MILLIS` (1000) and then the next, picked by the `millis` passed in; `Ghosts` never reads the clock. `at` takes the mouse as `double`, which an `int` caller passes as is.
