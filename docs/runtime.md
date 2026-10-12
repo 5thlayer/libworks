@@ -65,7 +65,31 @@ ghosts.at(mouseX, mouseY, Util.getMillis()).map(Ghost::stack);
 
 A ghost stands at the slot's `x` and `y`, or the `x` and `y` given, plus the suppliers' corner, read each time, so it follows a screen that moves on resize; a `new Ghosts()` has the corner at 0, so its positions are screen coordinates. `Ghost`s are in screen coordinates, so `GhostDraw.draw` goes in a pass drawn in them (`extractBackground`, or after `super.render`), not in `extractLabels`, which is translated to the panel's corner. A slot that holds an item, or is inactive, shows no ghost. A position with several candidates shows one for `Ghosts.CYCLE_MILLIS` (1000) and then the next, picked by the `millis` passed in; `Ghosts` never reads the clock. `at` takes the mouse as `double`, which an `int` caller passes as is.
 
-`add(Slot)` scans the item registry once, on first use, and keeps the result. Any other candidates that cost a scan go through `Ghosts.cached(...)`. What a slot takes is the Module's to decide, and EMI and JEI glue stays in the Module: the runtime depends on neither.
+`add(Slot)` scans the item registry once, on first use, and keeps the result. Any other candidates that cost a scan go through `Ghosts.cached(...)`. What a slot takes is the Module's to decide, and EMI and JEI glue stays in the Module: the runtime depends on neither. Jade is the one compat mod the runtime builds against, and only a Module's own plugin loads it (ADR 0005).
+
+## Language
+
+The runtime's own terms. They are not in `GLOSSARY.md`, which `fill-template.sh` copies into every new Library.
+
+**Machine screen**:
+A Module's screen for one of its machines, drawn from fills in the suite's one stand-in look until it has art: a grey panel, its slots, bars and gauges, and a status line.
+_Avoid_: GUI, menu (the menu is the server half)
+
+**Recess**:
+The bevel a slot, bar or gauge sits in: dark above and left, light below and right, grey inside.
+_Avoid_: slot background, inset
+
+**Bar**:
+A filled strip in its recess showing how far along something is, such as fuel burnt, energy stored or a craft's progress, with its label over it when the label fits.
+_Avoid_: progress bar (only one kind of bar)
+
+**Gauge**:
+A bar that shows a tank: the fluid's own texture, tinted as in the world, filling the part of the gauge the fluid fills.
+_Avoid_: fluid bar, tank bar
+
+**Status line**:
+What a machine says it is doing, in a sentence, on its screen and in Jade.
+_Avoid_: state text
 
 ## Releasing it
 
