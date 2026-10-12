@@ -21,14 +21,14 @@
 repositories { mavenLocal() }
 
 dependencies {
-    implementation 'io.github.5thlayer:libworks-runtime:[0.1.1,0.2)'
+    implementation 'io.github.5thlayer:libworks-runtime:[0.1.2,0.2)'
     jarJar(implementation('io.github.5thlayer:libworks-runtime')) {
-        version { strictly '[0.1.1,0.2)'; prefer '0.1.1' }
+        version { strictly '[0.1.2,0.2)'; prefer '0.1.2' }
     }
 }
 ```
 
-A Module that uses `libworks.machine` needs 0.1.2 or later, so its range starts there once 0.1.2 is released. The range is what makes two Modules nesting different patches load one copy: FML keeps the highest version in range. A breaking change bumps the minor, which leaves the range, as ADR 0001 sets for every version here.
+A Module that uses `libworks.machine` needs 0.1.2 or later, so its range starts there. The range is what makes two Modules nesting different patches load one copy: FML keeps the highest version in range. A breaking change bumps the minor, which leaves the range, as ADR 0001 sets for every version here.
 
 A modpack pins the Module's jar, which carries the nested jar; nothing else is installed.
 
