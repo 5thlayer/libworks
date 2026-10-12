@@ -33,7 +33,7 @@ plugin_version="$(sed -n 's/^plugin_version *= *//p' plugin/gradle.properties)"
 git rm -rq runtime plugin scripts/tests .github/scripts .github/workflows/module-ci.yml
 # Their docs and libworks' own ADRs go with them: a Module keeps ADR 0001, the versioning rule every
 # Library inherits, and numbers its own from 0002.
-git rm -q docs/plugin.md docs/runtime.md docs/adr/0002-*.md docs/adr/0003-*.md docs/adr/0004-*.md
+git rm -q docs/plugin.md docs/runtime.md docs/adr/0002-*.md docs/adr/0003-*.md docs/adr/0004-*.md docs/adr/0005-*.md
 sed -i.bak -e '/^\/\/ The runtime jar/d' -e "/^include 'runtime'/d" \
     -e '/The convention plugin a Module applies/,/fill-template.sh swaps/d' \
     -e "/^    includeBuild 'plugin'/d" \
