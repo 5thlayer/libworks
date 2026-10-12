@@ -21,6 +21,7 @@ which keeps this true.
 machine. A plugin in the runtime itself: one uid space for every Module's machines, which Jade's
 per-provider config toggles would then share. EMI's ghost stack provider stays in each Module: three
 lines a Module, too small to carry a second compat mod across the runtime's version ranges.
+ADR 0007 reverses this, after those three lines held the same bug in three Modules.
 
 ## Consequences
 

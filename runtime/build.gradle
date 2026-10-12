@@ -73,6 +73,11 @@ tasks.named('runGameTestServer') {
 }
 
 repositories {
+    // EMI, whose ghost stack provider the runtime registers; the runtime runs without it (ADR 0007).
+    maven {
+        url = 'https://cursemaven.com'
+        content { includeGroup 'curse.maven' }
+    }
     // Jade, which the machine providers build against; the runtime runs without it (ADR 0006).
     maven {
         url = 'https://api.modrinth.com/maven'
@@ -83,10 +88,14 @@ repositories {
 // The Jade the Modules build against. compileOnly: the game test server runs without it, which keeps
 // the runtime from loading a Jade class of its own accord (ADR 0006).
 def jade = 'maven.modrinth:jade:26.1.11+neoforge'
+// The EMI the Modules build against, compileOnly as Jade is: only EMI loads the runtime's EMI plugin (ADR 0007).
+def emi = 'curse.maven:emi-unofficial-port-1544558:8630349'
 
 dependencies {
     compileOnly jade
     testImplementation jade
+    compileOnly emi
+    testImplementation emi
 
     testImplementation platform('org.junit:junit-bom:5.10.2')
     testImplementation 'org.junit.jupiter:junit-jupiter'

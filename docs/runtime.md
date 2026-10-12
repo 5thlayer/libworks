@@ -8,6 +8,8 @@
 | `io.github._5thlayer.libworks.transfer.GuardedResourceHandler` | A transfer face with per-slot rules. NeoForge's `DelegatingResourceHandler` sends slot-less insert and extract past them; this loops through its own slots instead. |
 | `io.github._5thlayer.libworks.ghost.Ghost` | `Ghost(ItemStack stack, int x, int y)`: a faded item and where it is drawn, in screen coordinates. |
 | `io.github._5thlayer.libworks.ghost.Ghosts` | A screen's ghosts, the items an empty slot would take: positions registered once, each with its candidates, which cycle one a second. No client types, so a game test reads it. |
+| `io.github._5thlayer.libworks.ghost.GhostScreen` | `ghosts()`: a screen that shows `Ghosts`. The runtime offers the ghost under the mouse to EMI, so a Module's screen implements it and registers no EMI provider for its ghosts. No EMI or client types. |
+| `io.github._5thlayer.libworks.ghost.emi.GhostsEmiPlugin` | The runtime's `@EmiEntrypoint`: every `GhostScreen`'s ghosts as EMI's hovered stack, not clickable. EMI `compileOnly`, loaded only by EMI (ADR 0007). |
 | `io.github._5thlayer.libworks.ghost.client.GhostDraw` | `draw(graphics, font, ghost)`, the one look for the whole suite, and `tooltip(...)`, a ghost's item tooltip. Client-only. |
 | `io.github._5thlayer.libworks.machine.client.MachineDraw` | A machine screen's one stand-in look: the panel, recesses, bars, gauges, the fluid tooltip, and text cut to fit. Client-only. |
 | `io.github._5thlayer.libworks.machine.FluidContainers` | A machine's drain and fill slots: `drain` and `fill` move a whole container of fluid between a tank and any fluid-capability item, and `holds` and `takes` are the slots' checks. No client types. |
@@ -29,7 +31,7 @@ dependencies {
 }
 ```
 
-A Module that uses `libworks.machine` needs 0.1.2 or later, one that calls `fluidTooltip` with a title 0.1.4 or later, and one that uses `FluidContainers` 0.1.5 or later, so its range starts there. The range is what makes two Modules nesting different patches load one copy: FML keeps the highest version in range. A breaking change bumps the minor, which leaves the range, as ADR 0001 sets for every version here.
+A Module that uses `libworks.machine` needs 0.1.2 or later, one that calls `fluidTooltip` with a title 0.1.4 or later, one that uses `FluidContainers` 0.1.5 or later, and one that uses `GhostScreen` 0.1.6 or later, so its range starts there. The range is what makes two Modules nesting different patches load one copy: FML keeps the highest version in range. A breaking change bumps the minor, which leaves the range, as ADR 0001 sets for every version here.
 
 A modpack pins the Module's jar, which carries the nested jar; nothing else is installed.
 
@@ -65,13 +67,35 @@ for (Ghost ghost : ghosts.shown(Util.getMillis())) {
     GhostDraw.draw(graphics, font, ghost);
 }
 
-// in EMI's or JEI's glue
+// in JEI's glue; EMI's is the runtime's, through GhostScreen
 ghosts.at(mouseX, mouseY, Util.getMillis()).map(Ghost::stack);
 ```
 
 A ghost stands at the slot's `x` and `y`, or the `x` and `y` given, plus the suppliers' corner, read each time, so it follows a screen that moves on resize; a `new Ghosts()` has the corner at 0, so its positions are screen coordinates. `Ghost`s are in screen coordinates, so `GhostDraw.draw` goes in a pass drawn in them (`extractBackground`, or after `super.render`), not in `extractLabels`, which is translated to the panel's corner. A slot that holds an item, or is inactive, shows no ghost. A position with several candidates shows one for `Ghosts.CYCLE_MILLIS` (1000) and then the next, picked by the `millis` passed in; `Ghosts` never reads the clock. `at` takes the mouse as `double`, which an `int` caller passes as is.
 
-`add(Slot)` scans the item registry once, on first use, and keeps the result. Any other candidates that cost a scan go through `Ghosts.cached(...)`. What a slot takes is the Module's to decide, and EMI and JEI glue stays in the Module: the runtime depends on neither. Jade is the one compat mod the runtime builds against, and only a Module's own plugin loads it (ADR 0006).
+`add(Slot)` scans the item registry once, on first use, and keeps the result. Any other candidates that cost a scan go through `Ghosts.cached(...)`. What a slot takes is the Module's to decide. JEI glue stays in the Module; EMI's is the runtime's (below).
+
+## Ghosts in EMI
+
+A screen that implements `GhostScreen` has its ghosts in EMI with nothing else to register:
+
+```java
+public class BoilerScreen extends AbstractContainerScreen<BoilerMenu> implements GhostScreen {
+
+    private final Ghosts ghosts = new Ghosts(() -> leftPos, () -> topPos);
+
+    @Override
+    public Ghosts ghosts() {
+        return ghosts;
+    }
+}
+```
+
+The runtime's own `@EmiEntrypoint`, `GhostsEmiPlugin`, registers one generic stack provider: over a `GhostScreen`, the ghost `ghosts().at` finds at `Util.getMillis()` is EMI's hovered stack, one of its item whatever count it is drawn with, so the recipe and usage keys work on it as on a real stack. It is not clickable, so a left click goes past it to the empty slot under it, where a stack in hand goes in; a clickable one would have EMI take the click to show recipes. Off every ghost it hands EMI nothing, and EMI's own slot lookup answers for a real stack.
+
+The Module registers no stack provider for these ghosts. EMI asks a screen's own providers before the generic one, so a Module's old provider for the same screen keeps answering until the Module drops it: drop it, with its `new EmiStackInteraction(...)`, when moving onto `GhostScreen`. `GhostScreen` names no EMI type, and only EMI loads `GhostsEmiPlugin`, by its annotation, so a screen implements it whether or not EMI is installed and the runtime loads without EMI (ADR 0007). The runtime's mods.toml does not name EMI. JEI needs no such provider: it never takes a click on an ingredient a screen's handler names, so its glue, with `ghosts.at`, stays in the Module.
+
+Jade and EMI are the compat mods the runtime builds against, both `compileOnly` at the versions the Modules build against: only a Module's own plugin loads Jade's providers (ADR 0006), and only EMI loads the runtime's EMI plugin (ADR 0007).
 
 ## Machine screens
 
@@ -194,6 +218,6 @@ The runtime has its own version, `runtime_version` in `runtime/gradle.properties
 
 Nothing is pushed or uploaded without the user's word. `git tag -l 'runtime-v*' -n9` lists the releases.
 
-The runtime's own game tests (`sh ./gradlew :runtime:runGameTestServer`, also run by the root's `runGameTestServer`) live in `runtime/src/gametest`, outside the jar: the tab is registered, ghosts, and a `Tank` built on a server with no Jade (ADR 0006). Its JUnit tests run under FML (ModDevGradle's `unitTest`), which a `FluidStack` needs.
+The runtime's own game tests (`sh ./gradlew :runtime:runGameTestServer`, also run by the root's `runGameTestServer`) live in `runtime/src/gametest`, outside the jar: the tab is registered, ghosts, and a `Tank` built on a server with no Jade (ADR 0006); the server has no EMI either, so it loads the runtime without EMI (ADR 0007). Its JUnit tests run under FML (ModDevGradle's `unitTest`), which a `FluidStack` needs.
 
 `fill-template.sh` deletes `runtime/` from a Library: it is libworks' own.

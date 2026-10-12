@@ -1,0 +1,59 @@
+// SPDX-FileCopyrightText: 2026 5thlayer
+// SPDX-License-Identifier: MIT
+
+package io.github._5thlayer.libworks.ghost.emi;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+
+import dev.emi.emi.api.stack.EmiStack;
+import dev.emi.emi.api.stack.EmiStackInteraction;
+import io.github._5thlayer.libworks.ghost.GhostScreen;
+import io.github._5thlayer.libworks.ghost.Ghosts;
+import net.minecraft.world.level.material.Fluids;
+import org.junit.jupiter.api.Test;
+
+/**
+ * What EMI is handed for the mouse over a screen. An item stack can't be built here, where item
+ * components are never bound, so the hovered stack is a fluid's, which EMI treats alike.
+ */
+class GhostsEmiPluginTest {
+
+    @Test
+    void aHoveredGhostIsNotClickable() {
+        EmiStack stack = EmiStack.of(Fluids.WATER, 1000);
+        EmiStackInteraction hovered = GhostsEmiPlugin.hovered(stack);
+        assertFalse(hovered.isEmpty());
+        assertSame(stack, hovered.getStack());
+        assertFalse(hovered.isClickable(), "EMI would take the left click, and the slot never get it");
+    }
+
+    @Test
+    void offEveryGhostIsNothing() {
+        GhostScreen screen = Ghosts::new;
+        assertSame(EmiStackInteraction.EMPTY, GhostsEmiPlugin.at(screen, 30, 40, 0));
+    }
+
+    @Test
+    void aScreenWithoutGhostsIsNothing() {
+        assertSame(EmiStackInteraction.EMPTY, GhostsEmiPlugin.at(new Object(), 30, 40, 0));
+    }
+
+    /** A Module's screen implements it whether or not EMI is installed, so it names no EMI type. */
+    @Test
+    void theInterfaceNamesNoEmiType() throws IOException {
+        assertFalse(constantPool(GhostScreen.class).contains("dev/emi/"));
+        assertTrue(constantPool(GhostsEmiPlugin.class).contains("dev/emi/"), "the scan sees a named type");
+    }
+
+    private static String constantPool(Class<?> type) throws IOException {
+        try (InputStream in = type.getResourceAsStream(type.getSimpleName() + ".class")) {
+            return new String(in.readAllBytes(), StandardCharsets.ISO_8859_1);
+        }
+    }
+}
