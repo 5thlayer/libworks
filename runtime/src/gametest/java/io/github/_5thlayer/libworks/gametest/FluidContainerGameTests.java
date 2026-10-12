@@ -162,10 +162,10 @@ public final class FluidContainerGameTests {
                     "one empty bucket should fill to a water bucket, got " + output);
             helper.assertTrue(tank.getAmountAsInt(0) == 1500, "the tank should give 1000 mB, holds " + tank.getAmountAsInt(0));
 
-            var short_ = tank(4000, 500);
-            helper.assertTrue(FluidContainers.fill(new ItemStack(Items.BUCKET), ItemStack.EMPTY, short_, water()) == null,
+            var low = tank(4000, 500);
+            helper.assertTrue(FluidContainers.fill(new ItemStack(Items.BUCKET), ItemStack.EMPTY, low, water()) == null,
                     "a bucket should wait while the tank holds too little to fill it");
-            helper.assertTrue(short_.getAmountAsInt(0) == 500, "a refused fill should leave the tank, holds " + short_.getAmountAsInt(0));
+            helper.assertTrue(low.getAmountAsInt(0) == 500, "a refused fill should leave the tank, holds " + low.getAmountAsInt(0));
 
             var enough = tank(4000, 2000);
             helper.assertTrue(FluidContainers.fill(new ItemStack(Items.BUCKET), new ItemStack(Items.WATER_BUCKET), enough, water()) == null,

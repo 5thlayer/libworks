@@ -26,8 +26,9 @@ import org.jspecify.annotations.Nullable;
  * <p>A container goes whole or not at all: it waits in its slot while the tank has too little room, or too little
  * fluid, for all of it, or while the output has no room for what it becomes. The move runs on a copy of the two slots
  * inside a transaction, since a machine's own slots need not be transactional, and the caller lands it only once it
- * has gone through: it takes one from the container's slot and sets the output to what the method returns. No client
- * types, so a game test reads it.
+ * has gone through: it takes one from the container's slot and sets the output to what the method returns. The move
+ * opens a root transaction of its own, so call it outside any, such as from a machine's tick. No client types, so a
+ * game test reads it.
  */
 public final class FluidContainers {
 
@@ -113,7 +114,10 @@ public final class FluidContainers {
     private static long room(ResourceHandler<FluidResource> fluids, FluidResource fluid) {
         long room = 0;
         for (int index = 0; index < fluids.size(); index++) {
-            room += fluids.getCapacityAsLong(index, fluid) - fluids.getAmountAsLong(index);
+            // A slot that refuses the fluid gives no room, or a container with one could never fill whole.
+            if (fluids.isValid(index, fluid)) {
+                room += fluids.getCapacityAsLong(index, fluid) - fluids.getAmountAsLong(index);
+            }
         }
         return room;
     }

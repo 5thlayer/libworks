@@ -157,7 +157,7 @@ case WATER_IN -> FluidContainers.holds(stack, fluid -> fluid.getFluid() == Fluid
 case STEAM_IN -> FluidContainers.takes(stack, FluidResource.of(steam));
 ```
 
-A container goes whole or not at all. `drain` and `fill` return null, and change nothing, while the tank has too little room or too little of the fluid for the whole container, while the output holds something the container can't stack onto, or when the stack is empty or no fluid container. They work on a copy of the two slots inside a transaction, so a machine's own slots need not be transactional, and they move one container a call: the caller takes one from the container's slot and sets the output to what was returned. `fill` draws only the fluid it names, whatever else the tank holds. `holds` is true for a container holding any fluid its predicate accepts; `takes` for an empty one that fluid can go into.
+A container goes whole or not at all. `drain` and `fill` return null, and change nothing, while the tank has too little room or too little of the fluid for the whole container, while the output holds something the container can't stack onto, or when the stack is empty or no fluid container. They work on a copy of the two slots inside a root transaction of their own, so a machine's own slots need not be transactional and they are called outside any open transaction, as from a tick; and they move one container a call: the caller takes one from the container's slot and sets the output to what was returned. `fill` draws only the fluid it names, whatever else the tank holds. `holds` is true for a container holding any fluid its predicate accepts; `takes` for an empty one that fluid can go into.
 
 ## Language
 
