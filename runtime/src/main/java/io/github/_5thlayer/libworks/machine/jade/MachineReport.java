@@ -25,23 +25,23 @@ import snownee.jade.api.config.IPluginConfig;
  * {@link Client} built from it with {@code registerBlockComponent} for its block. This half names no client
  * type, so a dedicated server never loads Jade's drawing (ADR 0005).
  */
-public class MachineReport<B extends BlockEntity, D> implements StreamServerDataProvider<BlockAccessor, D> {
+public final class MachineReport<B extends BlockEntity, D> implements StreamServerDataProvider<BlockAccessor, D> {
 
     private final Identifier uid;
     private final Class<B> type;
-    private final Function<B, D> data;
+    private final Function<B, D> read;
     private final StreamCodec<RegistryFriendlyByteBuf, D> codec;
 
-    public MachineReport(Identifier uid, Class<B> type, Function<B, D> data, StreamCodec<RegistryFriendlyByteBuf, D> codec) {
+    public MachineReport(Identifier uid, Class<B> type, Function<B, D> read, StreamCodec<RegistryFriendlyByteBuf, D> codec) {
         this.uid = uid;
         this.type = type;
-        this.data = data;
+        this.read = read;
         this.codec = codec;
     }
 
     @Override
     public @Nullable D streamData(BlockAccessor accessor) {
-        return type.isInstance(accessor.getBlockEntity()) ? data.apply(type.cast(accessor.getBlockEntity())) : null;
+        return type.isInstance(accessor.getBlockEntity()) ? read.apply(type.cast(accessor.getBlockEntity())) : null;
     }
 
     @Override

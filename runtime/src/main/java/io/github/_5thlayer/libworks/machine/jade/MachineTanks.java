@@ -31,7 +31,7 @@ import snownee.jade.api.view.ViewGroup;
  * {@link Client} on the same uid with {@code registerFluidStorageClient}. This half names no client
  * type, so a dedicated server never loads Jade's drawing (ADR 0005).
  */
-public class MachineTanks<B extends BlockEntity> implements IServerExtensionProvider<FluidView.Data> {
+public final class MachineTanks<B extends BlockEntity> implements IServerExtensionProvider<FluidView.Data> {
 
     private static final String TITLE = "libworks_title";
 

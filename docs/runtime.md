@@ -28,7 +28,7 @@ dependencies {
 }
 ```
 
-The range is what makes two Modules nesting different patches load one copy: FML keeps the highest version in range. A breaking change bumps the minor, which leaves the range, as ADR 0001 sets for every version here.
+A Module that uses `libworks.machine` needs 0.1.2 or later, so its range starts there once 0.1.2 is released. The range is what makes two Modules nesting different patches load one copy: FML keeps the highest version in range. A breaking change bumps the minor, which leaves the range, as ADR 0001 sets for every version here.
 
 A modpack pins the Module's jar, which carries the nested jar; nothing else is installed.
 
@@ -80,7 +80,7 @@ A machine screen draws its stand-in look with `MachineDraw`, all in screen coord
 @Override
 public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
     super.extractBackground(graphics, mouseX, mouseY, partialTick); // dims the world behind
-    MachineDraw.panel(graphics, font, leftPos, topPos, imageWidth, imageHeight, menu.slots, ghosts);
+    MachineDraw.panel(graphics, font, leftPos, topPos, imageWidth, imageHeight, menu.slots, ghosts, Util.getMillis());
     MachineDraw.bar(graphics, font, leftPos + 28, topPos + 20, 80, MachineDraw.BAR_HEIGHT, burnt, BURN, burnLabel);
     MachineDraw.gauge(graphics, font, leftPos + 28, topPos + 38, 80, menu.water(), menu.waterCapacity());
 }
@@ -103,7 +103,7 @@ protected void extractTooltip(GuiGraphicsExtractor graphics, int mouseX, int mou
 }
 ```
 
-`panel` recesses only active slots and draws the ghosts over them; the screen keeps its own `Ghosts`. A bar's `fraction` is clamped to 0–1, and its label, white ringed in black so it reads over any fill, is drawn centred when it fits the width less 4 px and the bar is at least `BAR_HEIGHT` (12) tall; an empty `Component` draws none. A gauge is always `BAR_HEIGHT` tall, tiles the fluid's still texture tinted as in the world over the filled part, and writes the amount in mB when it fits; an empty stack draws only the recess. The runtime owns only the fluid tooltip's two strings, `libworks.machine.fluid_empty` and `libworks.machine.fluid`; bar labels come from the Module. `wholeOnHover(graphics, font, line, width, mouseX, mouseY)` shows a line `fitted` cut, whole.
+`panel` recesses only active slots and draws the ghosts over them at the `millis` passed in, as `Ghosts` never reads the clock; the screen keeps its own `Ghosts`. A bar's `fraction` is clamped to 0–1, and its label, white ringed in black so it reads over any fill, is drawn centred when it fits the width less 4 px and the bar is at least `BAR_HEIGHT` (12) tall; an empty `Component` draws none. A gauge is always `BAR_HEIGHT` tall, tiles the fluid's still texture tinted as in the world over the filled part, and writes the amount in mB when it fits; an empty stack draws only the recess. The runtime owns only the fluid tooltip's two strings, `libworks.machine.fluid_empty` and `libworks.machine.fluid`; bar labels come from the Module. `wholeOnHover(graphics, font, line, width, mouseX, mouseY)` shows a line `fitted` cut, whole.
 
 ## Machines in Jade
 
@@ -173,6 +173,6 @@ The runtime has its own version, `runtime_version` in `runtime/gradle.properties
 
 Nothing is pushed or uploaded without the user's word. `git tag -l 'runtime-v*' -n9` lists the releases.
 
-The runtime's own game test (`sh ./gradlew :runtime:runGameTestServer`, also run by the root's `runGameTestServer`) lives in `runtime/src/gametest`, outside the jar, and checks the tab is registered.
+The runtime's own game tests (`sh ./gradlew :runtime:runGameTestServer`, also run by the root's `runGameTestServer`) live in `runtime/src/gametest`, outside the jar: the tab is registered, ghosts, and a `Tank` built on a server with no Jade (ADR 0005). Its JUnit tests run under FML (ModDevGradle's `unitTest`), which a `FluidStack` needs.
 
 `fill-template.sh` deletes `runtime/` from a Library: it is libworks' own.

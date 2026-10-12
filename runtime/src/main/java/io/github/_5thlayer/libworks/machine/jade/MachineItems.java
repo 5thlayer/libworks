@@ -28,7 +28,7 @@ import snownee.jade.api.view.ViewGroup;
  * on the same uid with {@code registerItemStorageClient}. This half names no client type, so a dedicated
  * server never loads Jade's drawing (ADR 0005).
  */
-public class MachineItems implements IServerExtensionProvider<ItemStack> {
+public final class MachineItems implements IServerExtensionProvider<ItemStack> {
 
     private final Identifier uid;
 

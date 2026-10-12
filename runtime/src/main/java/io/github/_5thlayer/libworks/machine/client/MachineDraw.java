@@ -19,7 +19,6 @@ import net.minecraft.locale.Language;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.FormattedText;
 import net.minecraft.util.FormattedCharSequence;
-import net.minecraft.util.Util;
 import net.minecraft.world.inventory.Slot;
 import net.neoforged.neoforge.fluids.FluidStack;
 
@@ -58,19 +57,20 @@ public final class MachineDraw {
     }
 
     /**
-     * The panel at ({@code left}, {@code top}), a recess under each active slot, and the ghosts over them, which the
-     * slots' real stacks are drawn over after. The screen calls its {@code super.extractBackground} first, which dims
-     * the world behind.
+     * The panel at ({@code left}, {@code top}), a recess under each active slot, and the ghosts shown at
+     * {@code millis} over them, which the slots' real stacks are drawn over after. Pass the same {@code millis} to
+     * {@code ghosts.at} for the tooltip, so it names the ghost drawn. The screen calls its
+     * {@code super.extractBackground} first, which dims the world behind.
      */
     public static void panel(GuiGraphicsExtractor graphics, Font font, int left, int top, int width, int height,
-            Iterable<Slot> slots, Ghosts ghosts) {
+            Iterable<Slot> slots, Ghosts ghosts, long millis) {
         graphics.fill(left, top, left + width, top + height, PANEL);
         for (Slot slot : slots) {
             if (slot.isActive()) {
                 recess(graphics, left + slot.x, top + slot.y, SLOT_SIZE, SLOT_SIZE);
             }
         }
-        for (Ghost ghost : ghosts.shown(Util.getMillis())) {
+        for (Ghost ghost : ghosts.shown(millis)) {
             GhostDraw.draw(graphics, font, ghost);
         }
     }
