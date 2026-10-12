@@ -98,8 +98,8 @@ public final class MachineDraw {
 
     /**
      * A fluid gauge in its recess: the fluid's still texture, tinted as it is in the world, tiled over the part of
-     * the gauge the fluid fills, with the amount in mB written over it when it fits. An empty stack draws only the
-     * recess.
+     * the gauge the fluid fills, with the amount in mB written over it when a full gauge's would fit, so a narrow
+     * gauge never shows one. An empty stack draws only the recess.
      */
     public static void gauge(GuiGraphicsExtractor graphics, Font font, int x, int y, int width, FluidStack fluid, int capacity) {
         recess(graphics, x, y, width, BAR_HEIGHT);
@@ -115,10 +115,16 @@ public final class MachineDraw {
             graphics.blitSprite(RenderPipelines.GUI_TEXTURED, model.stillMaterial().sprite(), tileX, y, FLUID_TILE, FLUID_TILE, tint);
         }
         graphics.disableScissor();
-        Component amount = Component.literal(NumberFormat.getIntegerInstance().format(fluid.getAmount()) + " mB");
-        if (font.width(amount) <= width - PADDING) {
+        // Judged by a full gauge's label, so a gauge shows its amount at every fill or at none; a tank left above its
+        // capacity shows it only while that fits too.
+        Component amount = millibuckets(fluid.getAmount());
+        if (Math.max(font.width(millibuckets(capacity)), font.width(amount)) <= width - PADDING) {
             graphics.text(font, amount, x + LABEL_INSET, y + LABEL_INSET, LABEL, true);
         }
+    }
+
+    private static Component millibuckets(int amount) {
+        return Component.literal(NumberFormat.getIntegerInstance().format(amount) + " mB");
     }
 
     /** Over a gauge, the fluid's name, or that it is empty, and how much of the tank it fills. */
