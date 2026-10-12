@@ -11,7 +11,6 @@ package io.github._5thlayer.libworks.ghost;
  *
  * <p>Names no EMI or client type, so a screen implements it whether or not EMI is installed.
  */
-@FunctionalInterface
 public interface GhostScreen {
 
     /** The screen's own ghosts, the ones it draws. */

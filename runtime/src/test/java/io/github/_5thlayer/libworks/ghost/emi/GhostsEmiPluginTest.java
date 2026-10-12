@@ -40,7 +40,7 @@ class GhostsEmiPluginTest {
     }
 
     @Test
-    void aScreenWithoutGhostsIsNothing() {
+    void aScreenThatIsNoGhostScreenIsNothing() {
         assertSame(EmiStackInteraction.EMPTY, GhostsEmiPlugin.at(new Object(), 30, 40, 0));
     }
 
@@ -48,11 +48,18 @@ class GhostsEmiPluginTest {
     @Test
     void theInterfaceNamesNoEmiType() throws IOException {
         assertFalse(constantPool(GhostScreen.class).contains("dev/emi/"));
-        assertTrue(constantPool(GhostsEmiPlugin.class).contains("dev/emi/"), "the scan sees a named type");
     }
 
+    /** The plugin does name them, which shows the scan sees a named type. */
+    @Test
+    void thePluginNamesThem() throws IOException {
+        assertTrue(constantPool(GhostsEmiPlugin.class).contains("dev/emi/"));
+    }
+
+    /** As {@code ServerHalvesTest}'s: every type a class names is written out in its constant pool. */
     private static String constantPool(Class<?> type) throws IOException {
-        try (InputStream in = type.getResourceAsStream(type.getSimpleName() + ".class")) {
+        String file = type.getName().substring(type.getName().lastIndexOf('.') + 1) + ".class";
+        try (InputStream in = type.getResourceAsStream(file)) {
             return new String(in.readAllBytes(), StandardCharsets.ISO_8859_1);
         }
     }
