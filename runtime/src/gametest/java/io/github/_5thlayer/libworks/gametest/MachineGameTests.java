@@ -26,7 +26,7 @@ import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.registries.RegisterEvent;
 
 /**
- * The machine helpers' game test, on a server with no Jade (ADR 0005): that the server starts with
+ * The machine helpers' game test, on a server with no Jade (ADR 0006): that the server starts with
  * {@code libworks.machine} in the jar, and that a {@link Tank}, which names no Jade type, is built and read
  * there as a Module's block entity builds it.
  */

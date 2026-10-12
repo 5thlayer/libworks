@@ -23,7 +23,7 @@ import snownee.jade.api.config.IPluginConfig;
  *
  * <p>The Module registers this with {@code registerBlockDataProvider} for its block entity, and a
  * {@link Client} built from it with {@code registerBlockComponent} for its block. This half names no client
- * type, so a dedicated server never loads Jade's drawing (ADR 0005).
+ * type, so a dedicated server never loads Jade's drawing (ADR 0006).
  */
 public final class MachineReport<B extends BlockEntity, D> implements StreamServerDataProvider<BlockAccessor, D> {
 

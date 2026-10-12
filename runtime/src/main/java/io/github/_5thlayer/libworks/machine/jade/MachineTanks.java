@@ -29,7 +29,7 @@ import snownee.jade.api.view.ViewGroup;
  *
  * <p>The Module registers this with {@code registerFluidStorage} for its block entity, and a
  * {@link Client} on the same uid with {@code registerFluidStorageClient}. This half names no client
- * type, so a dedicated server never loads Jade's drawing (ADR 0005).
+ * type, so a dedicated server never loads Jade's drawing (ADR 0006).
  */
 public final class MachineTanks<B extends BlockEntity> implements IServerExtensionProvider<FluidView.Data> {
 

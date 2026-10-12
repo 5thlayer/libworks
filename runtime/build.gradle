@@ -73,7 +73,7 @@ tasks.named('runGameTestServer') {
 }
 
 repositories {
-    // Jade, which the machine providers build against; the runtime runs without it (ADR 0005).
+    // Jade, which the machine providers build against; the runtime runs without it (ADR 0006).
     maven {
         url = 'https://api.modrinth.com/maven'
         content { includeGroup 'maven.modrinth' }
@@ -81,7 +81,7 @@ repositories {
 }
 
 // The Jade the Modules build against. compileOnly: the game test server runs without it, which keeps
-// the runtime from loading a Jade class of its own accord (ADR 0005).
+// the runtime from loading a Jade class of its own accord (ADR 0006).
 def jade = 'maven.modrinth:jade:26.1.11+neoforge'
 
 dependencies {

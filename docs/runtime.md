@@ -11,7 +11,7 @@
 | `io.github._5thlayer.libworks.ghost.client.GhostDraw` | `draw(graphics, font, ghost)`, the one look for the whole suite, and `tooltip(...)`, a ghost's item tooltip. Client-only. |
 | `io.github._5thlayer.libworks.machine.client.MachineDraw` | A machine screen's one stand-in look: the panel, recesses, bars, gauges, the fluid tooltip, and text cut to fit. Client-only. |
 | `io.github._5thlayer.libworks.machine.Tank` | `Tank(id, fluid, capacity, titleKey)`: one of a machine's tanks as Jade shows it. No Jade or client types. |
-| `io.github._5thlayer.libworks.machine.jade.MachineReport` | A machine's lines in Jade, such as its status line, from data the server sends. Its `Client` draws them. Jade `compileOnly` (ADR 0005). |
+| `io.github._5thlayer.libworks.machine.jade.MachineReport` | A machine's lines in Jade, such as its status line, from data the server sends. Its `Client` draws them. Jade `compileOnly` (ADR 0006). |
 | `io.github._5thlayer.libworks.machine.jade.MachineItems` | A machine's items in Jade, slot by slot, as icons with counts through its `Client`. |
 | `io.github._5thlayer.libworks.machine.jade.MachineTanks` | A machine's tanks in Jade, one group each, titled through its `Client`. |
 
@@ -70,7 +70,7 @@ ghosts.at(mouseX, mouseY, Util.getMillis()).map(Ghost::stack);
 
 A ghost stands at the slot's `x` and `y`, or the `x` and `y` given, plus the suppliers' corner, read each time, so it follows a screen that moves on resize; a `new Ghosts()` has the corner at 0, so its positions are screen coordinates. `Ghost`s are in screen coordinates, so `GhostDraw.draw` goes in a pass drawn in them (`extractBackground`, or after `super.render`), not in `extractLabels`, which is translated to the panel's corner. A slot that holds an item, or is inactive, shows no ghost. A position with several candidates shows one for `Ghosts.CYCLE_MILLIS` (1000) and then the next, picked by the `millis` passed in; `Ghosts` never reads the clock. `at` takes the mouse as `double`, which an `int` caller passes as is.
 
-`add(Slot)` scans the item registry once, on first use, and keeps the result. Any other candidates that cost a scan go through `Ghosts.cached(...)`. What a slot takes is the Module's to decide, and EMI and JEI glue stays in the Module: the runtime depends on neither. Jade is the one compat mod the runtime builds against, and only a Module's own plugin loads it (ADR 0005).
+`add(Slot)` scans the item registry once, on first use, and keeps the result. Any other candidates that cost a scan go through `Ghosts.cached(...)`. What a slot takes is the Module's to decide, and EMI and JEI glue stays in the Module: the runtime depends on neither. Jade is the one compat mod the runtime builds against, and only a Module's own plugin loads it (ADR 0006).
 
 ## Machine screens
 
@@ -107,7 +107,7 @@ protected void extractTooltip(GuiGraphicsExtractor graphics, int mouseX, int mou
 
 ## Machines in Jade
 
-The runtime builds against Jade but registers nothing (ADR 0005). A Module's own `@WailaPlugin` builds the providers, with uids in its own namespace, and registers them; the runtime's game-test server runs without Jade, which keeps the runtime from loading a Jade class itself.
+The runtime builds against Jade but registers nothing (ADR 0006). A Module's own `@WailaPlugin` builds the providers, with uids in its own namespace, and registers them; the runtime's game-test server runs without Jade, which keeps the runtime from loading a Jade class itself.
 
 ```java
 @WailaPlugin
@@ -173,6 +173,6 @@ The runtime has its own version, `runtime_version` in `runtime/gradle.properties
 
 Nothing is pushed or uploaded without the user's word. `git tag -l 'runtime-v*' -n9` lists the releases.
 
-The runtime's own game tests (`sh ./gradlew :runtime:runGameTestServer`, also run by the root's `runGameTestServer`) live in `runtime/src/gametest`, outside the jar: the tab is registered, ghosts, and a `Tank` built on a server with no Jade (ADR 0005). Its JUnit tests run under FML (ModDevGradle's `unitTest`), which a `FluidStack` needs.
+The runtime's own game tests (`sh ./gradlew :runtime:runGameTestServer`, also run by the root's `runGameTestServer`) live in `runtime/src/gametest`, outside the jar: the tab is registered, ghosts, and a `Tank` built on a server with no Jade (ADR 0006). Its JUnit tests run under FML (ModDevGradle's `unitTest`), which a `FluidStack` needs.
 
 `fill-template.sh` deletes `runtime/` from a Library: it is libworks' own.

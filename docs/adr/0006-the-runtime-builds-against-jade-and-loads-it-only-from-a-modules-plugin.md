@@ -26,3 +26,4 @@ lines a Module, too small to carry a second compat mod across the runtime's vers
 
 - A Jade update the Modules take can need a runtime release first, inside the same minor.
 - A change to a provider's constructor is a breaking change under ADR 0001, like any other signature.
+- libworks-runtime 0.1.2, published before a plugin ADR took the number, calls this ADR 0005 in its sources.

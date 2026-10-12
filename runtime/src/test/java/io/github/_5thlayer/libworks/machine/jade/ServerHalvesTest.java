@@ -16,7 +16,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * The providers a Module registers on the common side name no client type and none of Jade's drawing
- * types, so a dedicated server with Jade installed never loads them (ADR 0005). Read from each class's
+ * types, so a dedicated server with Jade installed never loads them (ADR 0006). Read from each class's
  * constant pool, where every type it names is written out.
  */
 class ServerHalvesTest {
