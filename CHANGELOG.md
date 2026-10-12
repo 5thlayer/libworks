@@ -4,6 +4,7 @@ Written for Consumers: what a mod building against Example Library can use, or w
 
 ## Unreleased
 
+- `libworks-plugin` 0.2.1: `check` runs `checkPlaysAlone`, which fails when the Module ships an id, a data or assets folder, or a namespace string of another FactoryWorks Module, or requires one in `neoforge.mods.toml` (FactoryWorks ADR-0127, ADR 0005, #19). The plugin holds the one list of Modules, Gearworks and Voidworks included. A Module drops its own copy of the scan.
 - `libworks-plugin` 0.2.0, breaking: the plugin adds a `gametest` source set to the mod, which the dev runs load and the jar leaves out, and sets `libworks.run` to each run's name (ADR 0004, #6). A Module that adds `sourceSet sourceSets.gametest` to its mod itself is refused: delete the line.
 - The template's `DevPacks`, in `src/gametest/java`, switches on `dev_pack/` in the `client` run and `gametest_pack/` in `gameTestServer` when the Library has one, and its game test checks the template's own game-test pack (ADR 0004, #6).
 - `libworks-runtime` 0.1.1: `io.github._5thlayer.libworks.ghost` shows the faded item an empty slot would take (`docs/runtime.md`, #16). A screen owns a `Ghosts`, registers its slots (`add(Slot)` for every item the slot's `mayPlace` takes) or any screen position with its candidates, draws `shown(millis)` with `ghost.client.GhostDraw.draw`, and asks `at(mouseX, mouseY, millis)` what is under the mouse for EMI and JEI. `Ghosts.of(SizedIngredient)` gives an ingredient's members at its count, and a position cycles its candidates once a second.

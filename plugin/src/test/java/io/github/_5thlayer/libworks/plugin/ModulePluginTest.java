@@ -284,6 +284,62 @@ class ModulePluginTest {
         assertEquals("v\n", build("-q", "prefix").getOutput());
     }
 
+    private void write(String path, String text) throws IOException {
+        Path file = module.resolve(path);
+        Files.createDirectories(file.getParent());
+        Files.writeString(file, text);
+    }
+
+    @Test
+    void checkRunsCheckPlaysAlone() throws IOException {
+        buildScript("");
+        appendBuildScript("""
+                tasks.register('checkDependsOn') {
+                    doLast { println tasks.check.taskDependencies.getDependencies(tasks.check)*.name.contains('checkPlaysAlone') }
+                }
+                """);
+        assertEquals("true\n", build("-q", "checkDependsOn").getOutput());
+    }
+
+    @Test
+    void checkPlaysAloneListsWhatNamesAnotherModuleInTheProcessedResourcesAndTheCode() throws IOException {
+        buildScript("upstream('groundworks') { range = '[0.5.4,0.6)' }");
+        write("src/main/java/belt/Pipes.java", "package belt; class Pipes { String ns = \"pipeworks\"; String id = \"pipeworks:pipe\"; String own = \"beltworks:belt\"; }\n");
+        write("src/main/resources/data/gearworks/recipe/x.json", "{}\n");
+        write("src/main/resources/META-INF/neoforge.mods.toml", """
+                [[dependencies.beltworks]]
+                modId = "craftworks"
+                versionRange = "${groundworks_range}"
+                """);
+        // A generated resource ships too, so it is read where processResources puts it.
+        write("build/generated/pack/data/beltworks/recipe/y.json", "{\"a\":\"voidworks:void\"}\n");
+        appendBuildScript("sourceSets.main.resources.srcDir('build/generated/pack')\n");
+        String out = fail("checkPlaysAlone").getOutput();
+        assertTrue(out.contains("""
+                  build/resources/main/META-INF/neoforge.mods.toml requires craftworks
+                  build/resources/main/data/beltworks/recipe/y.json names voidworks:void
+                  build/resources/main/data/gearworks
+                  src/main/java/belt/Pipes.java names "pipeworks"
+                  src/main/java/belt/Pipes.java names pipeworks:pipe
+                """), out);
+    }
+
+    @Test
+    void checkPlaysAloneAllowsTheModulesOwnAndGroundworks() throws IOException {
+        buildScript("");
+        write("src/main/java/belt/Belt.java", "package belt; class Belt { String ns = \"beltworks\"; String gw = \"groundworks:dismantles\"; }\n");
+        write("src/main/resources/data/beltworks/tags/item/x.json", "{\"values\":[\"groundworks:wrench\",\"minecraft:stick\"]}\n");
+        write("src/main/resources/data/groundworks/tags/item/dismantles.json", "{}\n");
+        build("checkPlaysAlone");
+    }
+
+    @Test
+    void checkPlaysAlonePassesAModuleWithNoResources() throws IOException {
+        buildScript("");
+        write("src/main/java/belt/Belt.java", "package belt; class Belt { }\n");
+        build("checkPlaysAlone");
+    }
+
     private Path siblingAt(String version) throws IOException {
         Path checkout = Files.createDirectories(elsewhere.resolve("groundworks"));
         Files.writeString(checkout.resolve("gradle.properties"), "mod_version = " + version + "\n");

@@ -49,6 +49,7 @@ class ModulePlugin implements Plugin<Project> {
         configureNeoForge(project, property)
         configureTests(project)
         configureLicensing(project)
+        configurePlaysAlone(project, property)
         configureResources(project, property, libworks)
         configurePublishing(project, property, mavenLocal)
         configureUpstreams(project, libworks)
@@ -145,6 +146,36 @@ class ModulePlugin implements Plugin<Project> {
                 def expected = licensing()
                 def missing = expected.findAll { !names.contains(it) }
                 if (missing) throw new GradleException("${jarFile.get().asFile.name} lacks its licensing: ${missing.join(', ')}")
+            }
+        }
+        project.tasks.named('check') { dependsOn check }
+    }
+
+    /**
+     * The Module plays alone on Groundworks (FactoryWorks ADR-0127): nothing it ships names another Module's
+     * id or namespace, or requires another Module (ADR 0005). The resources are read as processed, so
+     * generated ones and the expanded mods.toml count.
+     */
+    private static void configurePlaysAlone(Project project, Closure<String> property) {
+        def check = project.tasks.register('checkPlaysAlone') {
+            group = 'verification'
+            description = 'Fails on what the Module ships that names another Module or requires one.'
+            def processed = project.tasks.named('processResources').map { it.destinationDir }
+            // Read when the task runs, so a source folder a Module adds later counts.
+            def code = project.sourceSets.main.java.sourceDirectories
+            def modId = property('mod_id')
+            // Files, not a dir: a Module with no resources leaves no processed folder.
+            inputs.files processed
+            inputs.files code
+            inputs.property 'modId', modId
+            doLast {
+                def rules = new PlaysAlone(modId)
+                def projectDir = project.projectDir.toPath()
+                def underRoot = { File root, List<String> found -> found.collect { "${PlaysAlone.relative(projectDir, root.toPath())}/$it" } }
+                def found = underRoot(processed.get(), rules.resources(processed.get().toPath()))
+                code.files.each { found += underRoot(it, rules.code(it.toPath())) }
+                if (found) throw new GradleException(
+                        "$modId ships what names another Module (FactoryWorks ADR-0127, libworks ADR 0005), whose namespaces are ${rules.forbidden.join(', ')}:\n  ${found.sort().join('\n  ')}")
             }
         }
         project.tasks.named('check') { dependsOn check }
