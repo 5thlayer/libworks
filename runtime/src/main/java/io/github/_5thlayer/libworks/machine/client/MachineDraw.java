@@ -4,6 +4,7 @@
 package io.github._5thlayer.libworks.machine.client;
 
 import java.text.NumberFormat;
+import java.util.ArrayList;
 import java.util.List;
 
 import io.github._5thlayer.libworks.ghost.Ghost;
@@ -129,11 +130,27 @@ public final class MachineDraw {
 
     /** Over a gauge, the fluid's name, or that it is empty, and how much of the tank it fills. */
     public static void fluidTooltip(GuiGraphicsExtractor graphics, Font font, FluidStack fluid, int capacity, int mouseX, int mouseY) {
+        graphics.setComponentTooltipForNextFrame(font, fluidLines(fluid, capacity), mouseX, mouseY);
+    }
+
+    /**
+     * Over a named tank's gauge, its {@code title}, such as "Water", then the fluid's name, or that it is empty, and
+     * how much of the tank it fills.
+     */
+    public static void fluidTooltip(GuiGraphicsExtractor graphics, Font font, Component title, FluidStack fluid, int capacity,
+            int mouseX, int mouseY) {
+        List<Component> lines = new ArrayList<>();
+        lines.add(title);
+        lines.addAll(fluidLines(fluid, capacity));
+        graphics.setComponentTooltipForNextFrame(font, lines, mouseX, mouseY);
+    }
+
+    private static List<Component> fluidLines(FluidStack fluid, int capacity) {
         NumberFormat number = NumberFormat.getIntegerInstance();
-        graphics.setComponentTooltipForNextFrame(font, List.of(
+        return List.of(
                 fluid.isEmpty() ? Component.translatable("libworks.machine.fluid_empty").withStyle(ChatFormatting.GRAY) : fluid.getHoverName(),
                 Component.translatable("libworks.machine.fluid", number.format(fluid.getAmount()), number.format(capacity))
-                        .withStyle(ChatFormatting.GRAY)), mouseX, mouseY);
+                        .withStyle(ChatFormatting.GRAY));
     }
 
     /** Whether ({@code mouseX}, {@code mouseY}) is over the box at ({@code x}, {@code y}), {@code width} by {@code height}. */

@@ -4,6 +4,7 @@ Written for Consumers: what a mod building against Example Library can use, or w
 
 ## Unreleased
 
+- `libworks-runtime` 0.1.4: `MachineDraw.fluidTooltip` has an overload that takes a tank's title and shows it first, over the fluid's name, or "Empty", and the amount, so a machine with named tanks words an empty one as every other machine does.
 - `libworks-runtime` 0.1.3: `MachineDraw.gauge` writes a gauge's amount only when a full gauge's label would fit, so a gauge narrower than its capacity's label, such as Craftworks' fluid boxes, shows none at any fill, where it showed one only while the amount was short.
 - `libworks-runtime` 0.1.2: `io.github._5thlayer.libworks.machine` gives the Modules' machines one stand-in screen look and one Jade view (`docs/runtime.md`, ADR 0006, #20). `machine.client.MachineDraw` draws the panel with its slots' recesses and ghosts, bars, fluid gauges and their tooltip, and text cut to fit; `GhostDraw.tooltip` shows a ghost's item tooltip. `machine.jade.MachineReport`, `MachineItems` and `MachineTanks`, with a `Tank` each, are the Jade providers a Module's own `@WailaPlugin` builds and registers; the runtime builds against Jade 26.1.11 and runs without it.
 - `libworks-plugin` 0.2.1: `check` runs `checkPlaysAlone`, which fails when the Module ships an id, a data or assets folder, or a namespace string of another FactoryWorks Module, or requires one in `neoforge.mods.toml` (FactoryWorks ADR-0127, ADR 0005, #19). The plugin holds the one list of Modules, Gearworks and Voidworks included. A Module drops its own copy of the scan.
