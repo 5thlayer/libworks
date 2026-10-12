@@ -47,7 +47,6 @@ public final class MachineDraw {
     public static final int MARGIN = 8;
 
     private static final int LABEL = 0xFFFFFFFF;
-    private static final int OUTLINE = 0xFF000000;
     /** What a label leaves free of its bar's width. */
     private static final int PADDING = 4;
     private static final int LABEL_INSET = 2;
@@ -93,7 +92,7 @@ public final class MachineDraw {
         recess(graphics, x, y, width, height);
         graphics.fill(x, y, x + Math.round(width * Math.clamp(fraction, 0f, 1f)), y + height, colour);
         if (height >= BAR_HEIGHT && font.width(label) <= width - PADDING) {
-            outlined(graphics, font, label, x + (width - font.width(label)) / 2, y + (height - font.lineHeight) / 2 + 1);
+            graphics.text(font, label, x + (width - font.width(label)) / 2, y + (height - font.lineHeight) / 2 + 1, LABEL, true);
         }
     }
 
@@ -118,7 +117,7 @@ public final class MachineDraw {
         graphics.disableScissor();
         Component amount = Component.literal(NumberFormat.getIntegerInstance().format(fluid.getAmount()) + " mB");
         if (font.width(amount) <= width - PADDING) {
-            outlined(graphics, font, amount, x + LABEL_INSET, y + LABEL_INSET);
+            graphics.text(font, amount, x + LABEL_INSET, y + LABEL_INSET, LABEL, true);
         }
     }
 
@@ -150,16 +149,5 @@ public final class MachineDraw {
         if (font.width(line) > width) {
             graphics.setComponentTooltipForNextFrame(font, List.of(line), mouseX, mouseY);
         }
-    }
-
-    /**
-     * White text ringed in black, as glow-ink sign text is drawn, so it reads over whatever fills the bar: a shadow
-     * alone is lost on a pale fluid such as steam.
-     */
-    private static void outlined(GuiGraphicsExtractor graphics, Font font, Component label, int x, int y) {
-        for (int[] offset : new int[][] {{-1, 0}, {1, 0}, {0, -1}, {0, 1}}) {
-            graphics.text(font, label, x + offset[0], y + offset[1], OUTLINE, false);
-        }
-        graphics.text(font, label, x, y, LABEL, false);
     }
 }

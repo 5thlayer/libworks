@@ -103,7 +103,7 @@ protected void extractTooltip(GuiGraphicsExtractor graphics, int mouseX, int mou
 }
 ```
 
-`panel` recesses only active slots and draws the ghosts over them at the `millis` passed in, as `Ghosts` never reads the clock; the screen keeps its own `Ghosts`. A bar's `fraction` is clamped to 0–1, and its label, white ringed in black so it reads over any fill, is drawn centred when it fits the width less 4 px and the bar is at least `BAR_HEIGHT` (12) tall; an empty `Component` draws none. A gauge is always `BAR_HEIGHT` tall, tiles the fluid's still texture tinted as in the world over the filled part, and writes the amount in mB when it fits; an empty stack draws only the recess. The runtime owns only the fluid tooltip's two strings, `libworks.machine.fluid_empty` and `libworks.machine.fluid`; bar labels come from the Module. `wholeOnHover(graphics, font, line, width, mouseX, mouseY)` shows a line `fitted` cut, whole.
+`panel` recesses only active slots and draws the ghosts over them at the `millis` passed in, as `Ghosts` never reads the clock; the screen keeps its own `Ghosts`. A bar's `fraction` is clamped to 0–1, and its label, white with a shadow, is drawn centred when it fits the width less 4 px and the bar is at least `BAR_HEIGHT` (12) tall; an empty `Component` draws none. A gauge is always `BAR_HEIGHT` tall, tiles the fluid's still texture tinted as in the world over the filled part, and writes the amount in mB when it fits; an empty stack draws only the recess. The runtime owns only the fluid tooltip's two strings, `libworks.machine.fluid_empty` and `libworks.machine.fluid`; bar labels come from the Module. `wholeOnHover(graphics, font, line, width, mouseX, mouseY)` shows a line `fitted` cut, whole.
 
 ## Machines in Jade
 
