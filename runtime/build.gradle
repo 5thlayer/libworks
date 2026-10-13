@@ -23,6 +23,15 @@ sourceSets {
         compileClasspath += sourceSets.main.output
         runtimeClasspath += sourceSets.main.output
     }
+    // libworks-gametest, the checks a Module's game tests share (#25): a jar of its own, never nested.
+    testkit {
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += sourceSets.main.output
+    }
+    test {
+        compileClasspath += sourceSets.testkit.output
+        runtimeClasspath += sourceSets.testkit.output
+    }
 }
 
 def gameTestReport = layout.buildDirectory.file('reports/gametest.xml').get().asFile
@@ -32,6 +41,7 @@ neoForge {
     version = neoforge_version
     addModdingDependenciesTo sourceSets.test
     addModdingDependenciesTo sourceSets.gametest
+    addModdingDependenciesTo sourceSets.testkit
 
     runs {
         gameTestServer {
@@ -45,6 +55,7 @@ neoForge {
         libworks {
             sourceSet sourceSets.main
             sourceSet sourceSets.gametest
+            sourceSet sourceSets.testkit
         }
     }
 
@@ -114,6 +125,24 @@ tasks.named('jar', Jar) {
     from(rootDir) { include 'LICENSE', 'LICENSES/MIT.txt' }
 }
 
+// A game library, not a mod: FML loads it beside Minecraft on a Module's dev runs, and no player
+// ever has it.
+def testkitJar = tasks.register('testkitJar', Jar) {
+    archiveBaseName = 'libworks-gametest'
+    from sourceSets.testkit.output
+    from(rootDir) { include 'LICENSE', 'LICENSES/MIT.txt' }
+    manifest.attributes(
+            'FMLModType': 'GAMELIBRARY',
+            'Automatic-Module-Name': 'io.github._5thlayer.libworks.testkit',
+            'Implementation-Version': runtime_version)
+}
+
+def testkitSourcesJar = tasks.register('testkitSourcesJar', Jar) {
+    archiveBaseName = 'libworks-gametest'
+    archiveClassifier = 'sources'
+    from sourceSets.testkit.allSource
+}
+
 processResources {
     def props = [
             version: runtime_version, minecraft_version: minecraft_version, neoforge_version: neoforge_version,
@@ -130,6 +159,19 @@ publishing {
             artifactId = base.archivesName.get()
             from components.java
         }
+        // Same version as the runtime it checks; a Module takes both from one range.
+        gametest(MavenPublication) {
+            artifactId = 'libworks-gametest'
+            artifact testkitJar
+            artifact testkitSourcesJar
+            pom.withXml {
+                def dep = asNode().appendNode('dependencies').appendNode('dependency')
+                dep.appendNode('groupId', maven_group)
+                dep.appendNode('artifactId', base.archivesName.get())
+                dep.appendNode('version', runtime_version)
+                dep.appendNode('scope', 'compile')
+            }
+        }
     }
 }
 
@@ -137,9 +179,11 @@ publishing {
 tasks.withType(PublishToMavenLocal).configureEach {
     def local = repositories.mavenLocal()
     repositories.remove(local)
-    def published = new File(local.url.path, "${maven_group.replace('.', '/')}/${base.archivesName.get()}/$runtime_version")
+    def root = local.url.path
     doFirst {
+        def artifactId = publication.artifactId
+        def published = new File(root, "${maven_group.replace('.', '/')}/$artifactId/$runtime_version")
         if (published.exists()) throw new GradleException(
-                "libworks-runtime $runtime_version is already in $published, and a published version never changes: bump runtime_version")
+                "$artifactId $runtime_version is already in $published, and a published version never changes: bump runtime_version")
     }
 }

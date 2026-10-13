@@ -50,6 +50,30 @@ modBus.addListener((BuildCreativeModeTabContentsEvent event) -> {
 
 A Module adds its items in one block, in the order it wants them. The order between Modules follows the mod load order, which a Module does not control and must not depend on. A Module that needs its items elsewhere as well adds them to a vanilla tab in the same listener.
 
+### Checking it in a game test
+
+`io.github._5thlayer.libworks.testkit.WorksTabCheck`, in the separate `libworks-gametest` jar (ADR 0008), is the Works tab game test every Module runs. Each call rebuilds the creative tabs, then succeeds or fails the test:
+
+```java
+static void register(MyGameTests.Registrar tests) {
+    tests.test("works_tab_holds_every_item_in_order", 1,
+            helper -> WorksTabCheck.inOrder(helper, MyMod.MOD_ID, List.of("gear", "belt")));
+    tests.test("no_other_tab_holds_a_library_item", 1,
+            helper -> WorksTabCheck.noOtherTab(helper, MyMod.MOD_ID));
+}
+```
+
+`inOrder` fails unless the Works tab shows exactly the listed item paths of that namespace, in that order, and fails on an empty list; `noOtherTab` fails if any tab but the Works tab and the search tab shows one, or if the Works tab shows none. The jar is a `GAMELIBRARY`, never nested: a Module compiles against it and puts it on its dev runs only, at the runtime's version, 0.1.8 or later:
+
+```groovy
+dependencies {
+    compileOnly 'io.github.5thlayer:libworks-gametest:[0.1.8,0.2)'
+    localRuntime 'io.github.5thlayer:libworks-gametest:[0.1.8,0.2)'
+}
+```
+
+While a Module's game tests ship in its jar (#17), a player's game loads the test class without `libworks-gametest`; it only fails if the test runs, which the Module's `*.gametest` switch keeps from happening.
+
 ## Ghosts
 
 A ghost is a faded item in an empty slot that shows what goes there. A screen owns one `Ghosts`, registers its positions once, and draws what `shown` returns:
@@ -223,7 +247,7 @@ The runtime has its own version, `runtime_version` in `runtime/gradle.properties
 
 1. set `runtime_version`, the bump ADR 0001 sets, and commit `chore(runtime): release <version>`
 2. `sh ./gradlew build runGameTestServer`
-3. `sh ./gradlew :runtime:publishToMavenLocal`, which refuses a version already in `~/.m2`: a published version never changes, so a fix is the next patch
+3. `sh ./gradlew :runtime:publishToMavenLocal`, which publishes `libworks-runtime` and `libworks-gametest` at that version, and refuses a version already in `~/.m2`: a published version never changes, so a fix is the next patch
 4. tag `runtime-v<version>`, annotated with the jar's sha256, as the Libraries' `v<version>` tags are: `git tag -a runtime-v<version> -m "libworks-runtime <version>" -m "sha256 $(sha256sum ~/.m2/repository/io/github/5thlayer/libworks-runtime/<version>/libworks-runtime-<version>.jar | cut -d' ' -f1)"`
 
 Nothing is pushed or uploaded without the user's word. `git tag -l 'runtime-v*' -n9` lists the releases.
