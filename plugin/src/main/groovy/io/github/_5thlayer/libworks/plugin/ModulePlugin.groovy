@@ -9,6 +9,7 @@ import org.gradle.api.Project
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.publish.maven.tasks.PublishToMavenLocal
 import org.gradle.api.tasks.Exec
+import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.jvm.toolchain.JavaLanguageVersion
@@ -113,6 +114,28 @@ class ModulePlugin implements Plugin<Project> {
                 cases.each { project.logger.lifecycle("${it.failure.size() ? 'FAILED' : 'passed'}  ${it.@name}") }
                 def failed = cases.count { it.failure.size() }
                 if (failed) throw new GradleException("$failed of ${cases.size()} game tests failed")
+            }
+        }
+
+        // The game test server's whole command line, one argument a line, to start it again without Gradle
+        // from run/gametest (skillworks' gametest-loop): ModDevGradle's args files leave out its classpath,
+        // which it sets only as the run starts. Built as Gradle builds it, with nothing run.
+        def serverCommand = project.layout.buildDirectory.file('moddev/gameTestServerRunCommand.txt')
+        def gameTestRun = project.tasks.named('runGameTestServer', JavaExec)
+        project.tasks.register('writeGameTestServerCommand') { task ->
+            task.description = 'Writes the game test server\'s command line, classpath included, to build/moddev.'
+            task.dependsOn { gameTestRun.get().taskDependencies }
+            task.outputs.file serverCommand
+            task.outputs.upToDateWhen { false }
+            task.doLast {
+                // In the order Gradle launches it: the argument providers' JVM arguments, the run's own, then
+                // Gradle's, such as file.encoding; the classpath is the one ModDevGradle sets as the run starts.
+                def run = gameTestRun.get()
+                def jvm = run.jvmArgumentProviders.collectMany { it.asArguments() as List } + run.jvmArgs
+                def args = [run.javaLauncher.get().executablePath.asFile.absolutePath] + jvm + (run.allJvmArgs - jvm)
+                args += ['-cp', run.classpath.plus(run.classpathProvider).asPath, run.mainClass.get()] + run.args
+                args += run.argumentProviders.collectMany { it.asArguments() as List }
+                serverCommand.get().asFile.text = args.join('\n') + '\n'
             }
         }
     }

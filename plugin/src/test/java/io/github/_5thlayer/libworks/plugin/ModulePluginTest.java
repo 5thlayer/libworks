@@ -153,6 +153,23 @@ class ModulePluginTest {
     }
 
     @Test
+    void writesTheGameTestServersWholeCommandLine() throws IOException {
+        buildScript("");
+        Path main = Files.createDirectories(module.resolve("src/main/java/belt"));
+        Files.writeString(main.resolve("Belt.java"), "package belt; public final class Belt {}\n");
+        build("writeGameTestServerCommand");
+        Path moddev = module.resolve("build/moddev");
+        List<String> command = Files.readAllLines(moddev.resolve("gameTestServerRunCommand.txt"));
+        assertTrue(command.getFirst().endsWith("/bin/java"), command.getFirst());
+        assertTrue(command.contains("@" + moddev.resolve("gameTestServerRunVmArgs.txt").toRealPath()), command.toString());
+        assertTrue(command.stream().anyMatch(a -> a.startsWith("-Dfml.modFolders=beltworks%%")), command.toString());
+        String classpath = command.get(command.indexOf("-cp") + 1);
+        assertTrue(classpath.contains(module.resolve("build/classes/java/main").toRealPath().toString()), classpath);
+        assertEquals("net.neoforged.devlaunch.Main", command.get(command.indexOf("-cp") + 2));
+        assertEquals("@" + moddev.resolve("gameTestServerRunProgramArgs.txt").toRealPath(), command.getLast());
+    }
+
+    @Test
     void compilesGametestCodeAgainstTheModuleAndNeoForge() throws IOException {
         buildScript("");
         Path main = Files.createDirectories(module.resolve("src/main/java/belt"));
