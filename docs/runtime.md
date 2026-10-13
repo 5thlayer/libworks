@@ -24,14 +24,14 @@
 repositories { mavenLocal() }
 
 dependencies {
-    implementation 'io.github.5thlayer:libworks-runtime:[0.1.7,0.2)'
+    implementation 'io.github.5thlayer:libworks-runtime:[0.1.8,0.2)'
     jarJar(implementation('io.github.5thlayer:libworks-runtime')) {
-        version { strictly '[0.1.7,0.2)'; prefer '0.1.7' }
+        version { strictly '[0.1.8,0.2)'; prefer '0.1.8' }
     }
 }
 ```
 
-A Module that uses `libworks.machine` needs 0.1.2 or later, one that calls `fluidTooltip` with a title 0.1.4 or later, one that uses `FluidContainers` 0.1.5 or later, one that uses `GhostScreen` 0.1.6 or later, and one that overrides its `ghostAt` 0.1.7 or later, so its range starts there. The range is what makes two Modules nesting different patches load one copy: FML keeps the highest version in range. A breaking change bumps the minor, which leaves the range, as ADR 0001 sets for every version here.
+A Module that uses `libworks.machine` needs 0.1.2 or later, one that calls `fluidTooltip` with a title 0.1.4 or later, one that uses `FluidContainers` 0.1.5 or later, one that uses `GhostScreen` 0.1.6 or later, one that overrides its `ghostAt` 0.1.7 or later, and one that runs `WorksTabCheck` from libworks-gametest 0.1.8 or later, so its range starts there. The range is what makes two Modules nesting different patches load one copy: FML keeps the highest version in range. A breaking change bumps the minor, which leaves the range, as ADR 0001 sets for every version here.
 
 A modpack pins the Module's jar, which carries the nested jar; nothing else is installed.
 
