@@ -5,7 +5,7 @@ Issues and specs for this repo live as GitHub issues. Use the `gh` CLI for all o
 ## Conventions
 
 - **Create an issue**: `gh issue create --title "..." --body "..."`. Use a heredoc for multi-line bodies.
-- **Read an issue**: `gh issue view <number> --comments`, filtering comments by `jq` and also fetching labels.
+- **Read an issue**: `gh issue view <number> --json number,title,body,labels,author,createdAt,comments --jq '{number, title, author: .author.login, createdAt, labels: [.labels[].name], body, comments: [.comments[] | {author: .author.login, createdAt, body}]}'`. `gh` refuses `--comments` together with `--json`.
 - **List issues**: `gh issue list --state open --json number,title,body,labels,comments --jq '[.[] | {number, title, body, labels: [.labels[].name], comments: [.comments[].body]}]'` with appropriate `--label` and `--state` filters.
 - **Comment on an issue**: `gh issue comment <number> --body "..."`
 - **Apply / remove labels**: `gh issue edit <number> --add-label "..."` / `--remove-label "..."`
@@ -27,7 +27,7 @@ GitHub shares one number space across issues and PRs, so a bare `#42` may be eit
 
 ## When a skill says "publish to the issue tracker"
 
-Create a GitHub issue.
+When the session is working an existing issue, such as one under `/triage`, publish into that issue: replace its body, retitle it, and set its labels. Otherwise create a GitHub issue.
 
 ## When a skill says "fetch the relevant ticket"
 
