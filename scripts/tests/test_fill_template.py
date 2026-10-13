@@ -101,7 +101,10 @@ class FillTemplate(unittest.TestCase):
                 continue
             text = path.read_text(errors="ignore")
             for m in pattern.finditer(text):
-                self.assertTrue(text[:m.start()].endswith("libworks "), f"{name}: {text[max(0, m.start() - 40):m.end()]!r}")
+                # Qualified as libworks' own, or as another project's ("Craftworks' ADR 0008"), or
+                # docs/agents/domain.md's made-up example of an ADR conflict.
+                qualified = re.search(r"(libworks |\w+'s? |^> _Contradicts )\Z", text[:m.start()], re.M)
+                self.assertTrue(qualified, f"{name}: {text[max(0, m.start() - 40):m.end()]!r}")
 
     def test_reuse_names_no_path_the_fill_removes(self):
         reuse = self.text("REUSE.toml")
