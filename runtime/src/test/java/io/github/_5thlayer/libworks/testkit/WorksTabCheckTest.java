@@ -20,29 +20,29 @@ class WorksTabCheckTest {
 
     @Test
     void theExpectedOrderPasses() {
-        assertEquals(Optional.empty(), WorksTabCheck.inOrder(List.of("gear", "belt"), List.of("gear", "belt")));
+        assertEquals(Optional.empty(), WorksTabCheck.orderFailure(List.of("gear", "belt"), List.of("gear", "belt")));
     }
 
     @Test
     void anotherOrderFailsNamingBoth() {
         assertEquals(Optional.of("the Works tab shows [belt, gear], not [gear, belt]"),
-                WorksTabCheck.inOrder(List.of("belt", "gear"), List.of("gear", "belt")));
+                WorksTabCheck.orderFailure(List.of("belt", "gear"), List.of("gear", "belt")));
     }
 
     @Test
     void expectingNothingFailsRatherThanPassOnAnEmptyTab() {
-        assertTrue(WorksTabCheck.inOrder(List.of(), List.of()).isPresent());
+        assertTrue(WorksTabCheck.orderFailure(List.of(), List.of()).isPresent());
     }
 
     @Test
     void itemsOnlyInTheWorksTabPass() {
-        assertEquals(Optional.empty(), WorksTabCheck.noOtherTab("beltworks", List.of("belt"), Map.of(TOOLS, List.of())));
+        assertEquals(Optional.empty(), WorksTabCheck.otherTabFailure("beltworks", List.of("belt"), Map.of(TOOLS, List.of())));
     }
 
     @Test
     void anEmptyWorksTabFails() {
         assertEquals(Optional.of("the Works tab shows no beltworks item, so no tab was filled"),
-                WorksTabCheck.noOtherTab("beltworks", List.of(), Map.of(TOOLS, List.of())));
+                WorksTabCheck.otherTabFailure("beltworks", List.of(), Map.of(TOOLS, List.of())));
     }
 
     @Test
@@ -51,6 +51,6 @@ class WorksTabCheckTest {
         others.put(Identifier.withDefaultNamespace("building_blocks"), List.of());
         others.put(TOOLS, List.of("belt"));
         assertEquals(Optional.of("the tab minecraft:tools_and_utilities shows [belt]"),
-                WorksTabCheck.noOtherTab("beltworks", List.of("belt"), others));
+                WorksTabCheck.otherTabFailure("beltworks", List.of("belt"), others));
     }
 }

@@ -29,7 +29,7 @@ public final class WorksTabCheck {
     /** The Works tab shows exactly {@code expected}, the paths of {@code namespace}'s items, in order. */
     public static void inOrder(GameTestHelper helper, String namespace, List<String> expected) {
         rebuild(helper);
-        finish(helper, inOrder(own(worksTab(), namespace), expected));
+        finish(helper, orderFailure(pathsIn(worksTab(), namespace), expected));
     }
 
     /** No tab but the Works tab and the search tab shows a {@code namespace} item, and the Works tab shows one. */
@@ -38,14 +38,14 @@ public final class WorksTabCheck {
         var others = new LinkedHashMap<Identifier, List<String>>();
         for (var entry : BuiltInRegistries.CREATIVE_MODE_TAB.entrySet()) {
             // The search tab lists every other tab's items.
-            if (entry.getKey() != WorksTab.KEY && entry.getValue().getType() != CreativeModeTab.Type.SEARCH) {
-                others.put(entry.getKey().identifier(), own(entry.getValue(), namespace));
+            if (!entry.getKey().equals(WorksTab.KEY) && entry.getValue().getType() != CreativeModeTab.Type.SEARCH) {
+                others.put(entry.getKey().identifier(), pathsIn(entry.getValue(), namespace));
             }
         }
-        finish(helper, noOtherTab(namespace, own(worksTab(), namespace), others));
+        finish(helper, otherTabFailure(namespace, pathsIn(worksTab(), namespace), others));
     }
 
-    static Optional<String> inOrder(List<String> shown, List<String> expected) {
+    static Optional<String> orderFailure(List<String> shown, List<String> expected) {
         if (expected.isEmpty()) {
             return Optional.of("no item is expected in the Works tab, so the check would pass on an empty tab");
         }
@@ -53,8 +53,8 @@ public final class WorksTabCheck {
                 : Optional.of("the Works tab shows " + shown + ", not " + expected);
     }
 
-    static Optional<String> noOtherTab(String namespace, List<String> works, Map<Identifier, List<String>> others) {
-        // Empty tabs would pass the loop below without the items reaching any tab.
+    static Optional<String> otherTabFailure(String namespace, List<String> works, Map<Identifier, List<String>> others) {
+        // With no item in the Works tab, every other tab empty would pass without the items reaching any tab.
         if (works.isEmpty()) {
             return Optional.of("the Works tab shows no " + namespace + " item, so no tab was filled");
         }
@@ -81,7 +81,7 @@ public final class WorksTabCheck {
         return BuiltInRegistries.CREATIVE_MODE_TAB.getValueOrThrow(WorksTab.KEY);
     }
 
-    private static List<String> own(CreativeModeTab tab, String namespace) {
+    private static List<String> pathsIn(CreativeModeTab tab, String namespace) {
         return tab.getDisplayItems().stream()
                 .map(ItemStack::getItem)
                 .map(BuiltInRegistries.ITEM::getKey)

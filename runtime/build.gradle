@@ -18,15 +18,15 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 sourceSets {
-    // The game test lives beside the jar, not in it.
-    gametest {
-        compileClasspath += sourceSets.main.output
-        runtimeClasspath += sourceSets.main.output
-    }
     // libworks-gametest, the checks a Module's game tests share (#25): a jar of its own, never nested.
     testkit {
         compileClasspath += sourceSets.main.output
         runtimeClasspath += sourceSets.main.output
+    }
+    // The game test lives beside the jar, not in it.
+    gametest {
+        compileClasspath += sourceSets.main.output + sourceSets.testkit.output
+        runtimeClasspath += sourceSets.main.output + sourceSets.testkit.output
     }
     test {
         compileClasspath += sourceSets.testkit.output
@@ -127,8 +127,10 @@ tasks.named('jar', Jar) {
 
 // A game library, not a mod: FML loads it beside Minecraft on a Module's dev runs, and no player
 // ever has it.
+def testkitId = 'libworks-gametest'
+
 def testkitJar = tasks.register('testkitJar', Jar) {
-    archiveBaseName = 'libworks-gametest'
+    archiveBaseName = testkitId
     from sourceSets.testkit.output
     from(rootDir) { include 'LICENSE', 'LICENSES/MIT.txt' }
     manifest.attributes(
@@ -138,9 +140,37 @@ def testkitJar = tasks.register('testkitJar', Jar) {
 }
 
 def testkitSourcesJar = tasks.register('testkitSourcesJar', Jar) {
-    archiveBaseName = 'libworks-gametest'
+    archiveBaseName = testkitId
     archiveClassifier = 'sources'
     from sourceSets.testkit.allSource
+}
+
+// The jar and its sources as a component of their own, so the publication carries Gradle module
+// metadata as the runtime's does. No dependency on the runtime: a Module nests its own (ADR 0008).
+def testkitVariant = { String name, String category, task ->
+    configurations.create(name) {
+        canBeConsumed = true
+        canBeResolved = false
+        attributes {
+            attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage, Usage.JAVA_RUNTIME))
+            attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category, category))
+            attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling, Bundling.EXTERNAL))
+            if (category == Category.DOCUMENTATION) {
+                attribute(DocsType.DOCS_TYPE_ATTRIBUTE, objects.named(DocsType, DocsType.SOURCES))
+            } else {
+                attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements, LibraryElements.JAR))
+                attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 25)
+            }
+        }
+        outgoing.artifact(task)
+    }
+}
+def testkitComponent = services.get(SoftwareComponentFactory).adhoc('testkit')
+testkitComponent.addVariantsFromConfiguration(testkitVariant('testkitElements', Category.LIBRARY, testkitJar)) {
+    mapToMavenScope('runtime')
+}
+testkitComponent.addVariantsFromConfiguration(testkitVariant('testkitSourcesElements', Category.DOCUMENTATION, testkitSourcesJar)) {
+    mapToOptional()
 }
 
 processResources {
@@ -161,29 +191,26 @@ publishing {
         }
         // Same version as the runtime it checks; a Module takes both from one range.
         gametest(MavenPublication) {
-            artifactId = 'libworks-gametest'
-            artifact testkitJar
-            artifact testkitSourcesJar
-            pom.withXml {
-                def dep = asNode().appendNode('dependencies').appendNode('dependency')
-                dep.appendNode('groupId', maven_group)
-                dep.appendNode('artifactId', base.archivesName.get())
-                dep.appendNode('version', runtime_version)
-                dep.appendNode('scope', 'compile')
-            }
+            artifactId = testkitId
+            from testkitComponent
         }
     }
 }
 
 // As the root's: a version in the local maven repository never changes, so a fix is the next patch.
+// Both jars are checked once, before either publishes, so neither goes out while the other's version
+// is taken.
+def published = { File root -> [base.archivesName.get(), testkitId]
+        .collect { new File(root, "${maven_group.replace('.', '/')}/$it/$runtime_version") }
+        .findAll { it.exists() } }
+def taken = null
 tasks.withType(PublishToMavenLocal).configureEach {
     def local = repositories.mavenLocal()
     repositories.remove(local)
-    def root = local.url.path
+    def root = new File(local.url.path)
     doFirst {
-        def artifactId = publication.artifactId
-        def published = new File(root, "${maven_group.replace('.', '/')}/$artifactId/$runtime_version")
-        if (published.exists()) throw new GradleException(
-                "$artifactId $runtime_version is already in $published, and a published version never changes: bump runtime_version")
+        if (taken == null) taken = published(root)
+        if (taken) throw new GradleException(
+                "$runtime_version is already in ${taken.join(' and ')}, and a published version never changes: bump runtime_version")
     }
 }

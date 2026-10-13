@@ -248,7 +248,7 @@ The runtime has its own version, `runtime_version` in `runtime/gradle.properties
 1. set `runtime_version`, the bump ADR 0001 sets, and commit `chore(runtime): release <version>`
 2. `sh ./gradlew build runGameTestServer`
 3. `sh ./gradlew :runtime:publishToMavenLocal`, which publishes `libworks-runtime` and `libworks-gametest` at that version, and refuses a version already in `~/.m2`: a published version never changes, so a fix is the next patch
-4. tag `runtime-v<version>`, annotated with the jar's sha256, as the Libraries' `v<version>` tags are: `git tag -a runtime-v<version> -m "libworks-runtime <version>" -m "sha256 $(sha256sum ~/.m2/repository/io/github/5thlayer/libworks-runtime/<version>/libworks-runtime-<version>.jar | cut -d' ' -f1)"`
+4. tag `runtime-v<version>`, annotated with both jars' sha256, as the Libraries' `v<version>` tags are: `git tag -a runtime-v<version> -m "libworks-runtime <version>" -m "$(cd ~/.m2/repository/io/github/5thlayer && sha256sum libworks-runtime/<version>/libworks-runtime-<version>.jar libworks-gametest/<version>/libworks-gametest-<version>.jar)"`
 
 Nothing is pushed or uploaded without the user's word. `git tag -l 'runtime-v*' -n9` lists the releases.
 
