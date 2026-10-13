@@ -27,3 +27,11 @@ type = "required"
 versionRange = "[${minecraft_version}]"
 ordering = "NONE"
 side = "BOTH"
+
+# The range is the one libworks { runtime } in build.gradle nests, to the next minor.
+[[dependencies.${mod_id}]]
+modId = "libworks"
+type = "required"
+versionRange = "${libworks_runtime_range}"
+ordering = "NONE"
+side = "BOTH"

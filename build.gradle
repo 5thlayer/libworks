@@ -7,10 +7,23 @@ plugins {
 }
 
 // What the Module requires of other Libraries, each as a range (libworks ADR 0003):
-// libworks {
-//     upstream('groundworks') { range = '[0.4.0,0.5)' }
-//     runtime = '0.1.0'
-// }
+libworks {
+    // upstream('groundworks') { range = '[0.4.0,0.5)' }
+    // Nested by jar-in-jar: the Works tab the whole suite shares, and from 0.1.8 libworks-gametest on
+    // the game tests' classpath (5thlayer/libworks ADR 0008).
+    runtime = '0.1.8'
+}
+
+repositories {
+    // libworks-runtime and libworks-gametest, from the local maven only, where their releases publish them.
+    // CI builds the runtime's tag there first.
+    mavenLocal {
+        content {
+            includeModule 'io.github.5thlayer', 'libworks-runtime'
+            includeModule 'io.github.5thlayer', 'libworks-gametest'
+        }
+    }
+}
 
 // The template's own checks run its plugin's tests too; a Module has no plugin/ build.
 if (gradle.includedBuilds.any { it.name == 'plugin' }) {

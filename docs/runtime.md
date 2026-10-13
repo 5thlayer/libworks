@@ -52,6 +52,8 @@ A Module adds its items in one block, in the order it wants them. The order betw
 
 ### Checking it in a game test
 
+The template starts every Library with both: a `WorksTabContents` listener and a `CreativeTabTests` that lists the order (#26).
+
 `io.github._5thlayer.libworks.testkit.WorksTabCheck`, in the separate `libworks-gametest` jar (ADR 0008), is the Works tab game test every Module runs. Each call rebuilds the creative tabs, then succeeds or fails the test:
 
 ```java

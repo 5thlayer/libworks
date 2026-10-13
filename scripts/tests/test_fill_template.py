@@ -138,6 +138,15 @@ class FillTemplate(unittest.TestCase):
         # What the plugin provides and the libworks { } example stay as the template words them.
         self.assertIn("buildGametestStructures tasks", build)
         self.assertIn("upstream('groundworks')", build)
+        # The Works tab the template starts with (#26): the runtime it nests and the repository it comes from.
+        self.assertIn("runtime = '0.1.8'", build)
+        self.assertIn("includeModule 'io.github.5thlayer', 'libworks-gametest'", build)
+
+    def test_the_works_tab_and_its_game_test_move_to_the_module_s_id(self):
+        package = self.repo / "src/main/java/io/github/_5thlayer/craftworks"
+        self.assertIn("WorksTab.KEY", (package / "WorksTabContents.java").read_text())
+        self.assertIn("Craftworks.MOD_ID", (package / "gametest/CreativeTabTests.java").read_text())
+        self.assertIn('modId = "libworks"', self.text("src/main/resources/META-INF/neoforge.mods.toml"))
 
     def test_the_gametest_code_and_pack_move_to_the_module_s_id(self):
         dev_packs = self.repo / "src/gametest/java/io/github/_5thlayer/craftworks/gametest/DevPacks.java"

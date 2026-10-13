@@ -52,6 +52,7 @@ public final class ExampleLibGameTests {
         var tests = new Registrar(event, environment);
         LoadTests.register(tests);
         GameTestPackTests.register(tests);
+        CreativeTabTests.register(tests);
     }
 
     private static Identifier id(String path) {
