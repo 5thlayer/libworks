@@ -9,6 +9,9 @@ import org.gradle.api.Project
 
 /** The {@code libworks { }} block: what a Module requires of the other Libraries. */
 class LibworksExtension {
+    /** The first runtime published with libworks-gametest beside it. */
+    private static final String FIRST_GAMETEST = '0.1.8'
+
     private final Project project
     final List<Upstream> upstreams = []
     /** The Module's own release tags, {@code <artifact>-v<version>} unless set. */
@@ -33,11 +36,16 @@ class LibworksExtension {
     /** The range libworks-runtime is nested in, or null when runtime is not set. */
     String getRuntimeRange() { runtime ? "[$runtime,${Versions.nextBreaking(runtime)})".toString() : null }
 
-    /** Nests libworks-runtime from this version up to the next breaking one (ADR 0001, docs/runtime.md). */
+    /**
+     * Nests libworks-runtime from this version up to the next breaking one (ADR 0001, docs/runtime.md).
+     * From 0.1.8, the Module's game tests also compile against libworks-gametest in the same range, on
+     * {@code libworksGametest}, and its dev runs load it; the jar never depends on it (libworks ADR 0008).
+     */
     void setRuntime(String version) {
         if (runtime) throw new GradleException("libworks: runtime is set once, and is already $runtime")
         runtime = version
         ['implementation', 'jarJar'].each { require(it, 'libworks-runtime', runtimeRange, version) }
+        if (Versions.compare(version, FIRST_GAMETEST) >= 0) require('libworksGametest', 'libworks-gametest', runtimeRange, version)
     }
 
     /** io.github.5thlayer:<artifact>, strictly in range and preferring its lower bound. Not private: Gradle decorates the extension. */

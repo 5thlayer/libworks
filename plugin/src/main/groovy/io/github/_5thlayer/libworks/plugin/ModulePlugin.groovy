@@ -39,6 +39,14 @@ class ModulePlugin implements Plugin<Project> {
         // Optional upstreams: on the dev runs' classpath, never in the published jar, pom or module metadata.
         def localRuntime = project.configurations.maybeCreate('localRuntime')
         project.configurations.named('runtimeClasspath') { it.extendsFrom localRuntime }
+        // libworks-gametest (libworks ADR 0008): compiled against and on the dev runs, never published. A run
+        // on a source set of its own, without localRuntime, extends it too.
+        def gametest = project.configurations.create('libworksGametest') {
+            it.canBeConsumed = false
+            it.canBeResolved = false
+        }
+        project.configurations.named('compileOnly') { it.extendsFrom gametest }
+        localRuntime.extendsFrom gametest
         def libworks = project.extensions.create('libworks', LibworksExtension, project)
 
         project.java.withSourcesJar()

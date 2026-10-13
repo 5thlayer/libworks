@@ -63,9 +63,12 @@ class ModulePluginTest {
                 tasks.register('repositoryNames') {
                     doLast { repositories.each { println it.name } }
                 }
+                tasks.register('gametestReaches') {
+                    doLast { println(['compileOnly', 'localRuntime'].collect { configurations[it].extendsFrom*.name.contains('libworksGametest') }.join(' ')) }
+                }
                 tasks.register('declared') {
                     doLast {
-                        ['implementation', 'jarJar', 'localRuntime'].each { c ->
+                        ['implementation', 'jarJar', 'libworksGametest', 'localRuntime'].each { c ->
                             configurations[c].dependencies.each { d ->
                                 println "$c ${d.group}:${d.name} strictly=${d.versionConstraint.strictVersion} prefer=${d.versionConstraint.preferredVersion}"
                             }
@@ -284,6 +287,16 @@ class ModulePluginTest {
         String out = build("-q", "declared").getOutput();
         assertTrue(out.contains("implementation io.github.5thlayer:libworks-runtime strictly=[0.1.2,0.2) prefer=0.1.2"), out);
         assertTrue(out.contains("jarJar io.github.5thlayer:libworks-runtime strictly=[0.1.2,0.2) prefer=0.1.2"), out);
+        assertFalse(out.contains("libworks-gametest"), out);
+    }
+
+    @Test
+    void addsTheGametestJarToDevRunsFromTheFirstRuntimeWithIt() throws IOException {
+        buildScript("runtime = '0.1.8'");
+        String out = build("-q", "declared").getOutput();
+        assertTrue(out.contains("libworksGametest io.github.5thlayer:libworks-gametest strictly=[0.1.8,0.2) prefer=0.1.8"), out);
+        assertFalse(out.contains("jarJar io.github.5thlayer:libworks-gametest"), out);
+        assertEquals("true true\n", build("-q", "gametestReaches").getOutput());
     }
 
     @Test

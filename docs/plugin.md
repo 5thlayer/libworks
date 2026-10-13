@@ -17,6 +17,8 @@ An upstream with `optional = true` goes on `localRuntime`, a configuration the p
 
 `libworksUpstreams` prints one line per upstream, `<repo> <tag>`, which `module-ci.yml` hands `.github/scripts/build-upstreams.sh` to publish each to the runner's `~/.m2`. With `runtime` set it adds `5thlayer/libworks runtime-v<version> :runtime`: a third field names the one Gradle project to publish from that checkout (`./gradlew :runtime:publishToMavenLocal`), which is not recursed into. Each line is built once.
 
+With `runtime` 0.1.8 or later, the plugin also puts `libworks-gametest` (ADR 0008) in the same range on `libworksGametest`, which `compileOnly` and `localRuntime` extend: the game tests compile against it and the dev runs load it, and the jar, pom and module metadata never name it. The runtime's tag publishes it beside the runtime, so CI needs nothing more. A game test server on a source set of its own, without `localRuntime`, as Craftworks' and Fieldworks' `solo` runs are, extends `libworksGametest` itself: `soloRuntimeOnly.extendsFrom implementation, runtimeOnly, libworksGametest`.
+
 `processResources` expands `META-INF/neoforge.mods.toml` with `mod_id`, `mod_name`, `mod_description`, `version`, `minecraft_version`, `neoforge_version`, each upstream's range as `${<name>_range}`, the Maven range the dependency uses: `versionRange = "${groundworks_range}"`, and, with `runtime` set, its range as `${libworks_runtime_range}`.
 
 The plugin adds no repository: it reads where `~/.m2` is from `mavenLocal()` and removes it again, so only a Module's own `includeModule`-filtered `~/.m2` repository resolves.

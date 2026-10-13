@@ -63,12 +63,14 @@ static void register(MyGameTests.Registrar tests) {
 }
 ```
 
-`inOrder` fails unless the Works tab shows exactly the listed item paths of that namespace, in that order, and fails on an empty list; `noOtherTab` fails if any tab but the Works tab and the search tab shows one, or if the Works tab shows none. The jar is a `GAMELIBRARY`, never nested: a Module compiles against it and puts it on its dev runs only, at the runtime's version, 0.1.8 or later:
+`inOrder` fails unless the Works tab shows exactly the listed item paths of that namespace, in that order, and fails on an empty list; `noOtherTab` fails if any tab but the Works tab and the search tab shows one, or if the Works tab shows none. The jar is a `GAMELIBRARY`, never nested. The convention plugin, from 0.3.0, adds it at the runtime's range, `compileOnly` and `localRuntime`, to a Module whose `runtime` is 0.1.8 or later (`docs/plugin.md`); the Module only lets its `~/.m2` repository serve it. `compileOnly` reaches `src/main`, so only game-test code may name it: anything else would fail in a player's game.
 
 ```groovy
-dependencies {
-    compileOnly 'io.github.5thlayer:libworks-gametest:[0.1.8,0.2)'
-    localRuntime 'io.github.5thlayer:libworks-gametest:[0.1.8,0.2)'
+mavenLocal {
+    content {
+        includeModule 'io.github.5thlayer', 'libworks-runtime'
+        includeModule 'io.github.5thlayer', 'libworks-gametest'
+    }
 }
 ```
 
