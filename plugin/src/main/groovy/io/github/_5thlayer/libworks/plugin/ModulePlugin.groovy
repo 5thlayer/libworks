@@ -119,24 +119,34 @@ class ModulePlugin implements Plugin<Project> {
 
         // The game test server's whole command line, one argument a line, to start it again without Gradle
         // from run/gametest (skillworks' gametest-loop): ModDevGradle's args files leave out its classpath,
-        // which it sets only as the run starts. Built as Gradle builds it, with nothing run.
-        def serverCommand = project.layout.buildDirectory.file('moddev/gameTestServerRunCommand.txt')
+        // which it sets only as the run starts. writeGameTestServerCommand writes it with nothing run, and
+        // every runGameTestServer again, so it never lags the args files beside it.
+        def serverCommand = project.layout.buildDirectory.file('moddev/gameTestServerRunCommand.txt').get().asFile
         def gameTestRun = project.tasks.named('runGameTestServer', JavaExec)
+        def writeServerCommand = {
+            def run = gameTestRun.get()
+            def provided = { List providers -> providers.collectMany { it.asArguments() as List } }
+            // In the order Gradle launches it: the argument providers' JVM arguments, the run's own, then
+            // Gradle's, such as file.encoding; the classpath is the one ModDevGradle sets as the run starts.
+            def jvm = provided(run.jvmArgumentProviders) + run.jvmArgs
+            def gradles = new ArrayList(run.allJvmArgs)
+            jvm.each { gradles.remove((Object) it) }
+            def args = [run.javaLauncher.get().executablePath.asFile.absolutePath] + jvm + gradles
+            args += ['-cp', run.classpath.plus(run.classpathProvider).asPath, run.mainClass.get()] + run.args
+            args += provided(run.argumentProviders)
+            def multiline = args.find { it.contains('\n') }
+            if (multiline) throw new GradleException("The game test server's argument \"$multiline\" spans lines, which $serverCommand cannot hold")
+            serverCommand.parentFile.mkdirs()
+            serverCommand.text = args.join('\n') + '\n'
+        }
+        gameTestRun.configure { it.doFirst { writeServerCommand() } }
         project.tasks.register('writeGameTestServerCommand') { task ->
-            task.description = 'Writes the game test server\'s command line, classpath included, to build/moddev.'
+            task.description = "Writes the game test server's command line, classpath included, to $serverCommand."
             task.dependsOn { gameTestRun.get().taskDependencies }
             task.outputs.file serverCommand
+            // Cheap, and its inputs are the run's whole configuration: always rewritten.
             task.outputs.upToDateWhen { false }
-            task.doLast {
-                // In the order Gradle launches it: the argument providers' JVM arguments, the run's own, then
-                // Gradle's, such as file.encoding; the classpath is the one ModDevGradle sets as the run starts.
-                def run = gameTestRun.get()
-                def jvm = run.jvmArgumentProviders.collectMany { it.asArguments() as List } + run.jvmArgs
-                def args = [run.javaLauncher.get().executablePath.asFile.absolutePath] + jvm + (run.allJvmArgs - jvm)
-                args += ['-cp', run.classpath.plus(run.classpathProvider).asPath, run.mainClass.get()] + run.args
-                args += run.argumentProviders.collectMany { it.asArguments() as List }
-                serverCommand.get().asFile.text = args.join('\n') + '\n'
-            }
+            task.doLast { writeServerCommand() }
         }
     }
 

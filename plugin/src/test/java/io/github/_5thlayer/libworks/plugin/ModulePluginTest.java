@@ -155,18 +155,18 @@ class ModulePluginTest {
     @Test
     void writesTheGameTestServersWholeCommandLine() throws IOException {
         buildScript("");
-        Path main = Files.createDirectories(module.resolve("src/main/java/belt"));
-        Files.writeString(main.resolve("Belt.java"), "package belt; public final class Belt {}\n");
+        // The command line alone: what the run needs built, Minecraft's assets among it, is ModDevGradle's.
+        appendBuildScript("tasks.named('writeGameTestServerCommand') { dependsOn.clear() }\n");
         build("writeGameTestServerCommand");
-        Path moddev = module.resolve("build/moddev");
+        Path moddev = module.toRealPath().resolve("build/moddev");
         List<String> command = Files.readAllLines(moddev.resolve("gameTestServerRunCommand.txt"));
         assertTrue(command.getFirst().endsWith("/bin/java"), command.getFirst());
-        assertTrue(command.contains("@" + moddev.resolve("gameTestServerRunVmArgs.txt").toRealPath()), command.toString());
         assertTrue(command.stream().anyMatch(a -> a.startsWith("-Dfml.modFolders=beltworks%%")), command.toString());
+        assertEquals("@" + moddev.resolve("gameTestServerRunVmArgs.txt"), command.get(2), command.toString());
         String classpath = command.get(command.indexOf("-cp") + 1);
-        assertTrue(classpath.contains(module.resolve("build/classes/java/main").toRealPath().toString()), classpath);
+        assertTrue(classpath.contains(module.toRealPath().resolve("build/classes/java/main").toString()), classpath);
         assertEquals("net.neoforged.devlaunch.Main", command.get(command.indexOf("-cp") + 2));
-        assertEquals("@" + moddev.resolve("gameTestServerRunProgramArgs.txt").toRealPath(), command.getLast());
+        assertEquals("@" + moddev.resolve("gameTestServerRunProgramArgs.txt"), command.getLast());
     }
 
     @Test
