@@ -27,7 +27,7 @@ GitHub shares one number space across issues and PRs, so a bare `#42` may be eit
 
 ## When a skill says "publish to the issue tracker"
 
-When the session is working an existing issue, such as one under `/triage`, publish into that issue: replace its body, retitle it, and set its labels. Otherwise create a GitHub issue.
+When the repo has `docs/spec/`, a spec lives there, not in an issue: `/to-spec` updates its file there and the issue links to it. Otherwise, when the session is working an existing issue, such as one under `/triage`, publish into that issue: replace its body, retitle it, and set its labels. Otherwise create a GitHub issue.
 
 ## When a skill says "fetch the relevant ticket"
 
