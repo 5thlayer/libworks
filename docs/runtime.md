@@ -52,7 +52,7 @@ A Module adds its items in one block, in the order it wants them. The order betw
 
 ### Checking it in a game test
 
-The template starts every Library with both: a `WorksTabContents` listener and a `CreativeTabTests` that lists the order (#26).
+The template starts every Module with both: a `WorksTabContents` listener and a `CreativeTabTests` that lists the order (#26).
 
 `io.github._5thlayer.libworks.testkit.WorksTabCheck`, in the separate `libworks-gametest` jar (ADR 0008), is the Works tab game test every Module runs. Each call rebuilds the creative tabs, then succeeds or fails the test:
 
@@ -223,7 +223,7 @@ A container goes whole or not at all. `drain` and `fill` return null, and change
 
 ## Language
 
-The runtime's own terms. They are not in `GLOSSARY.md`, which `fill-template.sh` copies into every new Library.
+The runtime's own terms. They are not in `GLOSSARY.md`, which `fill-template.sh` copies into every new Module.
 
 **Machine screen**:
 A Module's screen for one of its machines, drawn from fills in the suite's one stand-in look until it has art: a grey panel, its slots, bars and gauges, and a status line.
@@ -252,10 +252,10 @@ The runtime has its own version, `runtime_version` in `runtime/gradle.properties
 1. set `runtime_version`, the bump ADR 0001 sets, and commit `chore(runtime): release <version>`
 2. `sh ./gradlew build runGameTestServer`
 3. `sh ./gradlew :runtime:publishToMavenLocal`, which publishes `libworks-runtime` and `libworks-gametest` at that version, and refuses a version already in `~/.m2`: a published version never changes, so a fix is the next patch
-4. tag `runtime-v<version>`, annotated with both jars' sha256, as the Libraries' `v<version>` tags are: `git tag -a runtime-v<version> -m "libworks-runtime <version>" -m "$(cd ~/.m2/repository/io/github/5thlayer && sha256sum libworks-runtime/<version>/libworks-runtime-<version>.jar libworks-gametest/<version>/libworks-gametest-<version>.jar)"`
+4. tag `runtime-v<version>`, annotated with both jars' sha256, as the Modules' `v<version>` tags are: `git tag -a runtime-v<version> -m "libworks-runtime <version>" -m "$(cd ~/.m2/repository/io/github/5thlayer && sha256sum libworks-runtime/<version>/libworks-runtime-<version>.jar libworks-gametest/<version>/libworks-gametest-<version>.jar)"`
 
 Nothing is pushed or uploaded without the user's word. `git tag -l 'runtime-v*' -n9` lists the releases.
 
 The runtime's own game tests (`sh ./gradlew :runtime:runGameTestServer`, also run by the root's `runGameTestServer`) live in `runtime/src/gametest`, outside the jar: the tab is registered, ghosts, and a `Tank` built on a server with no Jade (ADR 0006); the server has no EMI either, so it loads the runtime without EMI (ADR 0007). Its JUnit tests run under FML (ModDevGradle's `unitTest`), which a `FluidStack` needs.
 
-`fill-template.sh` deletes `runtime/` from a Library: it is libworks' own.
+`fill-template.sh` deletes `runtime/` from a Module: it is libworks' own.

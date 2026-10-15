@@ -20,7 +20,7 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.Identifier;
 
 /**
- * A game test whose body is a method in the Library. 26.1's test functions are registered during
+ * A game test whose body is a method in the Module. 26.1's test functions are registered during
  * bootstrap, before any mod loads, so a mod registers test instances of its own type instead.
  * The codec, which the datapack registry requires, stores the body's id and looks it up again.
  */

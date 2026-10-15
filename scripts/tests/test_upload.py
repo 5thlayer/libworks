@@ -40,7 +40,7 @@ CHANGELOG = """# Changelog
 - Older.
 """
 
-PROPERTIES = """mod_name = Example Library
+PROPERTIES = """mod_name = Example Module
 mod_version = 0.3.9
 maven_group = io.github.5thlayer
 archives_name = examplelib
@@ -390,7 +390,7 @@ exec "$@"
         metadata = json.loads(self.curseforge_post().parts()["metadata"][0])
         self.assertEqual(metadata["changelog"], NOTES)
         self.assertEqual(metadata["changelogType"], "markdown")
-        self.assertEqual(metadata["displayName"], "Example Library 0.3.9")
+        self.assertEqual(metadata["displayName"], "Example Module 0.3.9")
         # 26.1.2 the Minecraft version, not the Bukkit one, NeoForge the loader, and both environments.
         self.assertEqual(sorted(metadata["gameVersions"]), [101, 301, 401, 402])
         self.assertEqual(metadata["releaseType"], "beta")
@@ -408,7 +408,7 @@ exec "$@"
 
     def test_refuses_a_version_curseforge_has_under_another_file_name(self):
         self.publish("0.3.9")
-        self.site.curseforge[CF_PROJECT] = ["Example Library 0.3.9"]
+        self.site.curseforge[CF_PROJECT] = ["Example Module 0.3.9"]
         result = self.upload("--site", "curseforge", "0.3.9")
         self.assertIn("CurseForge already has 0.3.9", result.stderr)
         self.assertEqual(self.site.sent("POST", "/cf-upload/"), [])

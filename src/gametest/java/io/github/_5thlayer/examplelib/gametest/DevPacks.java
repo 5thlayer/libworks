@@ -15,9 +15,9 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.AddPackFindersEvent;
 
 /**
- * Switches on the Library's dev pack, {@code dev_pack/}, in the {@code client} run and its game-test
- * pack, {@code gametest_pack/}, in {@code gameTestServer}, each when the Library has one: datapacks
- * in {@code src/gametest/resources}, which only the Library's own runs load and the jar leaves out
+ * Switches on the Module's dev pack, {@code dev_pack/}, in the {@code client} run and its game-test
+ * pack, {@code gametest_pack/}, in {@code gameTestServer}, each when the Module has one: datapacks
+ * in {@code src/gametest/resources}, which only the Module's own runs load and the jar leaves out
  * (libworks ADR 0004). The convention plugin names the run in {@code libworks.run}.
  */
 @EventBusSubscriber(modid = ExampleLib.MOD_ID)

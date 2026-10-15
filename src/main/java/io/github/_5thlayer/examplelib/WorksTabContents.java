@@ -7,7 +7,7 @@ import io.github._5thlayer.libworks.WorksTab;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 
 /**
- * Every item of the Library, in the suite's Works tab and no other (FactoryWorks ADR-0128). One
+ * Every item of the Module, in the suite's Works tab and no other (FactoryWorks ADR-0128). One
  * listener, in the order the tab shows them, which {@code CreativeTabTests} lists too.
  */
 final class WorksTabContents {

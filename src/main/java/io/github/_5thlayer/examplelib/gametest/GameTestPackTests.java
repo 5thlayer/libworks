@@ -14,7 +14,7 @@ import net.minecraft.world.item.Items;
 
 /**
  * The game test server switches on the game-test pack, {@code src/gametest/resources/gametest_pack},
- * which never ships (libworks ADR 0004): its one tag holds a stick. A Library's own game-test pack replaces
+ * which never ships (libworks ADR 0004): its one tag holds a stick. A Module's own game-test pack replaces
  * this one, and this test with it.
  */
 final class GameTestPackTests {

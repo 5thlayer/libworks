@@ -30,7 +30,7 @@ class ModulePlugin implements Plugin<Project> {
         project.group = property('maven_group')
         project.version = property('mod_version')
         project.base.archivesName = property('archives_name')
-        // Where Consumers resolve the Libraries from, and where the Module publishes (release-train).
+        // Where Consumers resolve the Modules from, and where the Module publishes (release-train).
         // mavenLocal() says where that is, and is removed again: only a Module's filtered ~/.m2 repo resolves.
         def local = project.repositories.mavenLocal()
         project.repositories.remove(local)
@@ -243,7 +243,7 @@ class ModulePlugin implements Plugin<Project> {
 
     /**
      * Maven local only. A version there never changes, and nothing publishes against a
-     * -PsiblingBuilds checkout: a released Module never requires an unreleased Library.
+     * -PsiblingBuilds checkout: a released Module never requires an unreleased Module.
      */
     private static void configurePublishing(Project project, Closure<String> property, File mavenLocal) {
         project.publishing {
@@ -272,7 +272,7 @@ class ModulePlugin implements Plugin<Project> {
         project.providers.gradleProperty('siblingBuilds').present
     }
 
-    /** Nothing leaves a -PsiblingBuilds build: a released Module never requires an unreleased Library. */
+    /** Nothing leaves a -PsiblingBuilds build: a released Module never requires an unreleased Module. */
     private static void refuseUnderSiblingBuilds(Object modName, String what) {
         throw new GradleException("$modName is built against sibling checkouts under -PsiblingBuilds, and nothing $what under it")
     }
@@ -283,7 +283,7 @@ class ModulePlugin implements Plugin<Project> {
         // names the one project CI publishes from that checkout, which it does not recurse into.
         project.tasks.register('libworksUpstreams') {
             group = 'help'
-            description = 'Prints each upstream Library CI builds: repo and tag.'
+            description = 'Prints each upstream Module CI builds: repo and tag.'
             doLast {
                 libworks.upstreams.each { println "${it.repo} ${it.tagPrefix}${it.lowerBound}" }
                 if (libworks.runtime) println "5thlayer/libworks runtime-v${libworks.runtime} :runtime"

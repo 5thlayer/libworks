@@ -7,7 +7,7 @@ import org.gradle.api.Action
 import org.gradle.api.GradleException
 import org.gradle.api.Project
 
-/** The {@code libworks { }} block: what a Module requires of the other Libraries. */
+/** The {@code libworks { }} block: what a Module requires of the other Modules. */
 class LibworksExtension {
     /** The first runtime published with libworks-gametest beside it. */
     private static final String FIRST_GAMETEST = '0.1.8'

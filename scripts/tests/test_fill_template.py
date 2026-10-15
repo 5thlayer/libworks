@@ -121,7 +121,7 @@ class FillTemplate(unittest.TestCase):
         readme = self.text("README.md")
         self.assertTrue(readme.startswith("# Craftworks\n"), readme)
         self.assertNotIn("template", readme.lower())
-        self.assertNotIn("Starting a Library", readme)
+        self.assertNotIn("Starting a Module", readme)
 
     def test_the_readme_opens_with_a_placeholder_for_the_maintainer_s_section_for_players(self):
         readme = self.text("README.md")

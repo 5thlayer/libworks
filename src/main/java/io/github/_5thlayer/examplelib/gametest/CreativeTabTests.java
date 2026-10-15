@@ -12,13 +12,13 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.resources.Identifier;
 
 /**
- * Every item of the Library is in the suite's Works tab, in {@code WorksTabContents}' order, and in no
- * other tab. Until the Library has an item there is nothing to check, so it checks that it has none:
+ * Every item of the Module is in the suite's Works tab, in {@code WorksTabContents}' order, and in no
+ * other tab. Until the Module has an item there is nothing to check, so it checks that it has none:
  * the first item fails that test until it is listed here.
  */
 final class CreativeTabTests {
 
-    /** The paths of the Library's items, as the Works tab shows them. */
+    /** The paths of the Module's items, as the Works tab shows them. */
     private static final List<String> WORKS_TAB_ORDER = List.of();
 
     private CreativeTabTests() {
@@ -40,7 +40,7 @@ final class CreativeTabTests {
                 .map(Identifier::getPath)
                 .toList();
         if (!items.isEmpty()) {
-            helper.fail("the Library registers " + items + ": list them in CreativeTabTests' WORKS_TAB_ORDER");
+            helper.fail("the Module registers " + items + ": list them in CreativeTabTests' WORKS_TAB_ORDER");
             return;
         }
         helper.succeed();

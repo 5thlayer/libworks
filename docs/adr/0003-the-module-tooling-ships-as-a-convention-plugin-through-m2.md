@@ -9,9 +9,9 @@ drifted (#8, 5thlayer/factoryworks ADR-0128).
 
 **Decision.** libworks carries a Gradle convention plugin in `plugin/`, versioned and tagged
 `plugin-v<version>` apart from the template and the runtime, and published only to `~/.m2`, as the
-Modules and Libraries are. The Python scripts are bundled in the plugin jar, so one version covers
+Modules are. The Python scripts are bundled in the plugin jar, so one version covers
 build logic and scripts; their tests stay in libworks. CI is a reusable workflow,
-`.github/workflows/module-ci.yml`, called at the same tag. A Module declares its upstream Libraries
+`.github/workflows/module-ci.yml`, called at the same tag. A Module declares its upstream Modules
 once in the plugin's extension, each as a version range; that one declaration drives the dependency,
 the check of a `-PsiblingBuilds` checkout against the range, the refusal to release on sibling
 builds, and the list CI builds from tags first. Tags default to `<artifact>-v<version>`. What can be
@@ -21,6 +21,6 @@ needing other structures commits them. The template stays, shrunk to a build tha
 plugin.
 
 **Considered.** The Gradle Plugin Portal needs an account and makes every publish public and
-permanent, for no gain: CI already builds upstream Libraries from their tags into a runner's
+permanent, for no gain: CI already builds upstream Modules from their tags into a runner's
 `~/.m2`. Fetching the scripts separately would give them a second version to keep in step. Per-mod
 settings for game-test structures and upload checks would have served two Modules each.

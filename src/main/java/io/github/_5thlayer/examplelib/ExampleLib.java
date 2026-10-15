@@ -8,7 +8,7 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 
 /**
- * The Library's entry point. It fills its part of the suite's Works tab and registers the game tests,
+ * The Module's entry point. It fills its part of the suite's Works tab and registers the game tests,
  * which exist only when game tests are enabled.
  */
 @Mod(ExampleLib.MOD_ID)

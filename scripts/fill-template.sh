@@ -8,9 +8,9 @@
 #   scripts/fill-template.sh craftworks Craftworks "Craftworks" "The Personal Assembler."
 #
 # The placeholders are the mod id `examplelib` (also the package, the artifact and the resource
-# namespace), the class prefix `ExampleLib` and the display name `Example Library`. gradle.properties
+# namespace), the class prefix `ExampleLib` and the display name `Example Module`. gradle.properties
 # holds the rest, and the build, the mods.toml and the scripts read it from there. maven_group stays
-# io.github.5thlayer, which every Library shares. It commits nothing.
+# io.github.5thlayer, which every Module shares. It commits nothing.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -26,13 +26,13 @@ description="${4:-}"
 [[ -e src/main/java/io/github/_5thlayer/examplelib ]] || fail "no examplelib package here: the template is already filled."
 
 # The runtime jar, the convention plugin and the tooling's own tests and CI belong to libworks, not
-# to a Library (ADR-0128, ADR 0003). The Module applies the plugin at the version plugin/ holds, from
+# to a Module (ADR-0128, ADR 0003). The Module applies the plugin at the version plugin/ holds, from
 # ~/.m2, and calls module-ci.yml at that version's tag.
 plugin_version="$(sed -n 's/^plugin_version *= *//p' plugin/gradle.properties)"
 [[ -n "$plugin_version" ]] || fail "plugin/gradle.properties names no plugin_version."
 git rm -rq runtime plugin scripts/tests .github/scripts .github/workflows/module-ci.yml
 # Their docs and libworks' own ADRs go with them: a Module keeps ADR 0001, the versioning rule every
-# Library inherits, and numbers its own from 0002.
+# Module inherits, and numbers its own from 0002.
 git rm -q docs/plugin.md docs/runtime.md $(git ls-files 'docs/adr/*.md' | grep -v '^docs/adr/0001-')
 sed -i.bak -e '/^\/\/ The runtime jar/d' -e "/^include 'runtime'/d" \
     -e '/The convention plugin a Module applies/,/fill-template.sh swaps/d' \
@@ -46,7 +46,7 @@ rm settings.gradle.bak build.gradle.bak REUSE.toml.bak
 cat > .github/workflows/ci.yml <<YAML
 # Builds and tests every push through the CI every Module shares, at the tag of the plugin
 # build.gradle applies: the two versions move together (libworks ADR 0003). It never publishes:
-# a Library's jar reaches a Consumer only through ~/.m2, and Modrinth and CurseForge, only from a
+# a Module's jar reaches a Consumer only through ~/.m2, and Modrinth and CurseForge, only from a
 # maintainer's machine (docs/agents/releases.md).
 name: CI
 
@@ -74,8 +74,8 @@ git mv "src/main/java/$package/$id/gametest/ExampleLibGameTests.java" "src/main/
 
 # Every tracked text file that names a placeholder, but not this script, which is deleted below.
 escape() { printf '%s' "$1" | sed -e 's/[\/&|]/\\&/g'; }
-git grep -lI -e examplelib -e ExampleLib -e 'Example Library' -- . ':!scripts/fill-template.sh' | while read -r file; do
-    sed -i.bak -e "s|examplelib|$id|g" -e "s|ExampleLib|$class|g" -e "s|Example Library|$(escape "$name")|g" "$file"
+git grep -lI -e examplelib -e ExampleLib -e 'Example Module' -- . ':!scripts/fill-template.sh' | while read -r file; do
+    sed -i.bak -e "s|examplelib|$id|g" -e "s|ExampleLib|$class|g" -e "s|Example Module|$(escape "$name")|g" "$file"
     rm "$file.bak"
 done
 if [[ -n "$description" ]]; then
@@ -96,13 +96,13 @@ rm CHANGELOG.md.bak
     [[ -z "$description" ]] || printf '\n%s\n' "$description"
 } > README.md
 
-# CLAUDE.md's template-only section tells an agent the checkout is the template, which a Library is not.
+# CLAUDE.md's template-only section tells an agent the checkout is the template, which a Module is not.
 perl -0pi -e 's/\n<!-- template-only:.*?<!-- \/template-only -->\n//s' CLAUDE.md
 ! grep -q template-only CLAUDE.md || fail "CLAUDE.md still has its template-only section."
 
 git rm -q scripts/fill-template.sh
 echo "Filled the template as $id ($class, \"$name\"). Next:"
 echo "  - write GLOSSARY.md's first terms, and README.md's technical sections below the maintainer's section for players"
-echo "  - if the Library goes to Modrinth and CurseForge, set its projects and dependencies in gradle.properties"
+echo "  - if the Module goes to Modrinth and CurseForge, set its projects and dependencies in gradle.properties"
 echo "  - sh ./gradlew build runGameTestServer"
 echo "  - commit: chore: fill the libworks template"

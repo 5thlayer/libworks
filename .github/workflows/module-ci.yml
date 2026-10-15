@@ -50,7 +50,7 @@ jobs:
         run: ./gradlew -p plugin publishToMavenLocal
         working-directory: .libworks
 
-      # Each upstream Library the Module declares, from its tag, the same way.
+      # Each upstream Module the Module declares, from its tag, the same way.
       # libworks itself runs its own copy, having no .libworks checkout.
       - run: |
           script=.libworks/.github/scripts/build-upstreams.sh

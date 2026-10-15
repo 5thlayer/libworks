@@ -306,7 +306,7 @@ def main(args):
         fail(usage)
     if not sites:
         fail("gradle.properties sets neither modrinth_project_id nor curseforge_project_id, "
-             "so this Library goes to neither site.")
+             "so this Module goes to neither site.")
 
     release = Release(args[0], dry_run)
     through_op(sys.argv[1:], sites)

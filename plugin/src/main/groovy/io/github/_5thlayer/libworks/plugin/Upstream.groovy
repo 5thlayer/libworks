@@ -6,7 +6,7 @@ package io.github._5thlayer.libworks.plugin
 import org.gradle.api.GradleException
 
 /**
- * A Library the Module requires at a version range: what it depends on, what a -PsiblingBuilds
+ * Another Module this Module requires at a version range: what it depends on, what a -PsiblingBuilds
  * checkout is checked against, and what CI builds from its tag (ADR 0003).
  */
 class Upstream {

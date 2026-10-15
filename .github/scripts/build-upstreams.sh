@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MIT
 #
 # Reads a Module's `libworksUpstreams` lines, `<repo> <tag>`, on stdin and publishes each upstream
-# Library to ~/.m2 from its tag, as its release does on a maintainer's machine. An upstream that
+# Module to ~/.m2 from its tag, as its release does on a maintainer's machine. An upstream that
 # applies the libworks plugin has the plugin version it applies, then its own upstreams, built first,
 # recursively; each repo and tag is built once. An upstream not on the plugin is published as is.
 # A line `<repo> <tag> <project>`, such as `5thlayer/libworks runtime-v0.1.0 :runtime`, publishes

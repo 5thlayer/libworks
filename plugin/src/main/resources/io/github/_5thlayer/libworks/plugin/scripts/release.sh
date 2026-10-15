@@ -2,7 +2,7 @@
 # SPDX-FileCopyrightText: 2026 5thlayer
 # SPDX-License-Identifier: MIT
 #
-# Release the Library at <version> from HEAD: the changelog's Unreleased entries become <version>'s,
+# Release the Module at <version> from HEAD: the changelog's Unreleased entries become <version>'s,
 # the build and game tests pass, and the jar is published to the local maven repository, tagged,
 # and, with --upload, uploaded to Modrinth and CurseForge by upload.py, when gradle.properties names a project.
 #
@@ -22,7 +22,7 @@ here="$(cd "$(dirname "$0")" && pwd)"
 
 fail() { echo "release: $*" >&2; exit 1; }
 
-# The Library's names come from gradle.properties, as the build's do.
+# The Module's names come from gradle.properties, as the build's do.
 property() { sed -n "s/^$1 *= *//p" gradle.properties; }
 name="$(property mod_name)"
 group="$(property maven_group)"

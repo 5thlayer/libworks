@@ -1,5 +1,5 @@
 # Builds and tests every push through the Module CI every Module calls (ADR 0003). It never
-# publishes: a Library's jar reaches a Consumer only through ~/.m2, and Modrinth and CurseForge,
+# publishes: a Module's jar reaches a Consumer only through ~/.m2, and Modrinth and CurseForge,
 # only from a maintainer's machine (docs/agents/releases.md). The template builds its plugin from
 # plugin/; fill-template.sh points a Module at module-ci.yml at the plugin's tag instead.
 name: CI

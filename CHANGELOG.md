@@ -1,9 +1,10 @@
 # Changelog
 
-Written for Consumers: what a mod building against Example Library can use, or will see change. A published version never changes: a fix is the next patch (`docs/agents/releases.md`).
+Written for Consumers: what a mod building against Example Module can use, or will see change. A published version never changes: a fix is the next patch (`docs/agents/releases.md`).
 
 ## Unreleased
 
+- The template says Module where it said Library, after FactoryWorks' glossary (ADR-0115, ADR-0128): its display name placeholder is `Example Module`, which `fill-template.sh` replaces, and ADR 0004 is `0004-a-modules-dev-and-game-test-packs-never-ship.md` (5thlayer/skillworks#14).
 - The template starts with the Works tab: `libworks { runtime = '0.1.8' }`, the `libworks` dependency in `neoforge.mods.toml`, an empty `WorksTabContents` listener on `WorksTab.KEY`, and a `CreativeTabTests` game test. Until the Library lists an item in its `WORKS_TAB_ORDER` it checks that the Library registers none, so the first item fails until it is listed; then it runs `WorksTabCheck.inOrder` and `noOtherTab` (#26).
 - `libworks-plugin` 0.3.0, breaking: a Module whose `runtime` is 0.1.8 or later gets `libworks-gametest` at the runtime's range on `libworksGametest`, which `compileOnly` and `localRuntime` extend, so its game tests call `WorksTabCheck` with no dependency of their own (`docs/plugin.md`, #25). Its `~/.m2` repository must let `libworks-gametest` through, an edit to its build, so the bump is a minor (ADR 0001).
 - `libworks-plugin` 0.2.2: `writeGameTestServerCommand` writes the game test server's whole command line, classpath included, to `build/moddev/gameTestServerRunCommand.txt`, so the game tests can run again without Gradle, as skillworks' `gametest-loop` runs them (`docs/plugin.md`).

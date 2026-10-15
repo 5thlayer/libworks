@@ -6,7 +6,7 @@ plugins {
     id 'io.github.5thlayer.libworks.module'
 }
 
-// What the Module requires of other Libraries, each as a range (libworks ADR 0003):
+// What the Module requires of other Modules, each as a range (libworks ADR 0003):
 libworks {
     // upstream('groundworks') { range = '[0.4.0,0.5)' }
     // Nested by jar-in-jar: the Works tab the whole suite shares, and from 0.1.8 libworks-gametest on

@@ -1,6 +1,6 @@
 {
   "pack": {
-    "description": "Example Library game tests",
+    "description": "Example Module game tests",
     "min_format": [101, 1],
     "max_format": [101, 1]
   }
