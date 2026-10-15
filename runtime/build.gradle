@@ -44,6 +44,11 @@ neoForge {
     addModdingDependenciesTo sourceSets.testkit
 
     runs {
+        // Offers the sample Gallery pack, from the gametest source set, to try by hand.
+        client {
+            client()
+            gameDirectory = project.file('run/client')
+        }
         gameTestServer {
             type = 'gameTestServer'
             gameDirectory = project.file('run/gametest')

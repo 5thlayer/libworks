@@ -29,3 +29,9 @@ _Avoid_: test datapack, gametest datapack
 **Dev pack**:
 A datapack only this Module's dev client switches on, holding the data a Consumer would supply, so a feature a Consumer turns on with data can be tried by hand. Never in what players download.
 _Avoid_: debug pack, test pack
+
+### Shipped packs
+
+**Gallery pack**:
+A datapack in this Module's jar, off until a player turns it on, whose functions build a working scene of each of the Module's features, each with a sign naming it. Functions only: turning it on changes nothing about how the Module plays (ADR 0010).
+_Avoid_: demo pack, showcase pack, gallery datapack

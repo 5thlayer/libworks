@@ -5,6 +5,7 @@
 | Class | For |
 |---|---|
 | `io.github._5thlayer.libworks.WorksTab` | `KEY`, the `ResourceKey<CreativeModeTab>` of `libworks:works`, the one "Works" tab the whole FactoryWorks suite shares. Its icon is vanilla's iron pickaxe, so it exists without any Module. |
+| `io.github._5thlayer.libworks.gallery.GalleryPack` | `register(modBus, modId)`: offers the Module's Gallery pack, `gallery_pack/` in its jar, off by default (ADR 0010); `id`, `build` and `scene` name the pack and its functions. |
 | `io.github._5thlayer.libworks.transfer.GuardedResourceHandler` | A transfer face with per-slot rules. NeoForge's `DelegatingResourceHandler` sends slot-less insert and extract past them; this loops through its own slots instead. |
 | `io.github._5thlayer.libworks.ghost.Ghost` | `Ghost(ItemStack stack, int x, int y)`: a faded item and where it is drawn, in screen coordinates. |
 | `io.github._5thlayer.libworks.ghost.Ghosts` | A screen's ghosts, the items an empty slot would take: positions registered once, each with its candidates, which cycle one a second. No client types, so a game test reads it. |
@@ -31,7 +32,7 @@ dependencies {
 }
 ```
 
-A Module that uses `libworks.machine` needs 0.1.2 or later, one that calls `fluidTooltip` with a title 0.1.4 or later, one that uses `FluidContainers` 0.1.5 or later, one that uses `GhostScreen` 0.1.6 or later, one that overrides its `ghostAt` 0.1.7 or later, and one that runs `WorksTabCheck` from libworks-gametest 0.1.8 or later, so its range starts there. The range is what makes two Modules nesting different patches load one copy: FML keeps the highest version in range. A breaking change bumps the minor, which leaves the range, as ADR 0001 sets for every version here.
+A Module that uses `libworks.machine` needs 0.1.2 or later, one that calls `fluidTooltip` with a title 0.1.4 or later, one that uses `FluidContainers` 0.1.5 or later, one that uses `GhostScreen` 0.1.6 or later, one that overrides its `ghostAt` 0.1.7 or later, one that runs `WorksTabCheck` from libworks-gametest 0.1.8 or later, and one with a Gallery pack 0.1.9 or later, so its range starts there. The range is what makes two Modules nesting different patches load one copy: FML keeps the highest version in range. A breaking change bumps the minor, which leaves the range, as ADR 0001 sets for every version here.
 
 A modpack pins the Module's jar, which carries the nested jar; nothing else is installed.
 
@@ -77,6 +78,42 @@ mavenLocal {
 ```
 
 While a Module's game tests ship in its jar (#17), a player's game loads the test class without `libworks-gametest`; it only fails if the test runs, which the Module's `*.gametest` switch keeps from happening.
+
+## Gallery packs
+
+A Module's Gallery pack (ADR 0010) is `src/main/resources/gallery_pack/`, a datapack of functions only, which the Module offers with one line in its constructor:
+
+```java
+GalleryPack.register(modBus, MOD_ID);
+```
+
+It shows in the Data Packs screen as `<modid>.gallery.pack` from the Module's lang file, and is never on until a player turns it on there or with `/datapack enable "mod/<modid>:gallery_pack"`. Running a function needs cheats in single player, or operator rights on a server.
+
+### Layout
+
+Every Module's gallery is laid out alike, so a player who has walked one knows the rest:
+
+- `<modid>:gallery/build` runs each scene in README order, the first where the player stands and each further one 24 blocks east of the last: `execute positioned ~24 ~ ~ run function <modid>:gallery/<scene>`. A scene runs on its own from where the player stands, too.
+- A scene builds in its plot alone: from `~2` to `~25` east, from the sign's row at `~0` to `~-12` north, 16 high above a stone floor at `~-1`. It clears the plot first, filling it with `structure_void`, then the stone floor, then `air`, since a `fill` that changes nothing fails.
+- Its sign stands at the plot's south front, `~13 ~ ~`, as `oak_sign[rotation=0]` with `is_waxed:1b`. Its lines are translation keys, `<modid>.gallery.<scene>` for the feature's name and `<modid>.gallery.<scene>.<n>` for what it shows, in the Module's lang file. A scene of a gesture shows its result, and its sign says how to make it.
+- A scene is built working, from the Module, vanilla and the Modules it requires: power, fuel, items and fluid in place. It changes blocks, their contents, and the Module's own records for what it places; never time, weather, game rules or players.
+- A gallery has at most `GalleryCheck.MAX_SCENES` (12) scenes: the strip the check loads and clears holds no more.
+- A command fails only by throwing, as vanilla's do; one that reports a failure and returns 0 passes the check unseen.
+
+### Checking it in a game test
+
+`io.github._5thlayer.libworks.testkit.GalleryCheck`, in libworks-gametest, is the gallery test every Module runs. `builds` turns the pack on, runs the build as an operator player standing at `origin`, then clears the strip and turns the pack off, passing or failing:
+
+```java
+tests.testOnItsOwn("the_gallery_builds_every_scene", GalleryCheck.TICKS,
+        helper -> GalleryCheck.builds(helper, MyMod.MOD_ID, new BlockPos(0, 1, 8), List.of(
+                new GalleryCheck.Scene("harvester", new BlockPos(13, 0, -6), MyBlocks.HARVESTER.get()),
+                new GalleryCheck.Scene("oil_well", new BlockPos(13, 0, -6), MyBlocks.OIL_WELL.get()))));
+```
+
+It fails when the pack is not offered or is on by default; when a function under `<modid>:gallery/` failed to load, naming the line that did not parse, as a block that no longer exists makes it; when a listed scene has no function; when a command in the build fails, naming it, in a scene function too; and when a scene's key block, given from where that scene runs, is not there or lies outside its plot. Turning a pack on reloads the server's data under every test running with it, so the test runs in a batch of its own. A scene that sets up records checks and clears them in a test of the Module's own, from `assertRuns`, `assertKeyBlocks`, `select` and `operator`.
+
+libworks' own sample gallery, a furnace and a hopper, is in `runtime/src/gametest/resources/gallery_pack/`, and `sh ./gradlew :runtime:runClient` offers it.
 
 ## Ghosts
 
@@ -256,6 +293,6 @@ The runtime has its own version, `runtime_version` in `runtime/gradle.properties
 
 Nothing is pushed or uploaded without the user's word. `git tag -l 'runtime-v*' -n9` lists the releases.
 
-The runtime's own game tests (`sh ./gradlew :runtime:runGameTestServer`, also run by the root's `runGameTestServer`) live in `runtime/src/gametest`, outside the jar: the tab is registered, ghosts, and a `Tank` built on a server with no Jade (ADR 0006); the server has no EMI either, so it loads the runtime without EMI (ADR 0007). Its JUnit tests run under FML (ModDevGradle's `unitTest`), which a `FluidStack` needs.
+The runtime's own game tests (`sh ./gradlew :runtime:runGameTestServer`, also run by the root's `runGameTestServer`) live in `runtime/src/gametest`, outside the jar: the tab is registered, `GalleryCheck` on the sample gallery and on fixtures that must fail it, ghosts, and a `Tank` built on a server with no Jade (ADR 0006); the server has no EMI either, so it loads the runtime without EMI (ADR 0007). Its JUnit tests run under FML (ModDevGradle's `unitTest`), which a `FluidStack` needs.
 
 `fill-template.sh` deletes `runtime/` from a Module: it is libworks' own.
