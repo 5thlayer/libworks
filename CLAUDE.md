@@ -12,7 +12,7 @@ The build applies the libworks convention plugin (ADR 0003), built here from `pl
 
 ## Workflow
 
-Commit on the current branch; open a feature branch only when the user asks for one. Nothing is pushed without the user's word.
+Commit on the current branch; open a feature branch only when the user asks for one. Nothing is pushed without the user's word. Asking a session to steward a PR is the user's word for that PR's pushes, its rebases onto `main`, and its merge, under the `steward` skill.
 
 Anything that changes the Module's behaviour gets a `/code-review`: the project skill in `.claude/skills/code-review`, from mattpocock/skills, never the built-in review of the same name. Doc and plumbing changes skip it: that covers `CLAUDE.md`, `GLOSSARY.md`, ADRs, `docs/`, `.claude/`, submodule bumps, and tooling or CI config.
 
