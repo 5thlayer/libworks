@@ -12,6 +12,8 @@ The skills speak in terms of five canonical triage roles. This file maps those r
 
 When a skill mentions a role (e.g. "apply the AFK-ready triage label"), use the corresponding label string from this table.
 
+**Epics.** An issue too big for one ticket is `ready-for-human` until grilled. Its split is `/to-tickets`'s output, not a decision to list.
+
 Edit the right-hand column to match whatever vocabulary you actually use.
 
 GitHub doesn't copy labels from a template. These five come from the 5thlayer organization's default labels (Settings → Repository → Repository labels), which every new 5thlayer repo gets, one made from libworks included. A repo that predates a label gets it with `gh label clone 5thlayer/libworks --repo 5thlayer/<repo>`. A change to the labels is made in the org defaults and in libworks together.
