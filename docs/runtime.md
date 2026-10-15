@@ -60,7 +60,7 @@ The template starts every Module with both: a `WorksTabContents` listener and a 
 static void register(MyGameTests.Registrar tests) {
     tests.test("works_tab_holds_every_item_in_order", 1,
             helper -> WorksTabCheck.inOrder(helper, MyMod.MOD_ID, List.of("gear", "belt")));
-    tests.test("no_other_tab_holds_a_library_item", 1,
+    tests.test("no_other_tab_holds_a_module_item", 1,
             helper -> WorksTabCheck.noOtherTab(helper, MyMod.MOD_ID));
 }
 ```

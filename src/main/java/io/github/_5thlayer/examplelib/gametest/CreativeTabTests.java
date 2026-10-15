@@ -31,7 +31,7 @@ final class CreativeTabTests {
         }
         tests.test("works_tab_holds_every_item_in_order", 1,
                 helper -> WorksTabCheck.inOrder(helper, ExampleLib.MOD_ID, WORKS_TAB_ORDER));
-        tests.test("no_other_tab_holds_a_library_item", 1, helper -> WorksTabCheck.noOtherTab(helper, ExampleLib.MOD_ID));
+        tests.test("no_other_tab_holds_a_module_item", 1, helper -> WorksTabCheck.noOtherTab(helper, ExampleLib.MOD_ID));
     }
 
     private static void noItem(GameTestHelper helper) {
