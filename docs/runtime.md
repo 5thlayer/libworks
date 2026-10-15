@@ -97,21 +97,22 @@ Every Module's gallery is laid out alike, so a player who has walked one knows t
 - A scene builds in its plot alone: from `~2` to `~25` east, from the sign's row at `~0` to `~-12` north, 16 high above a stone floor at `~-1`. It clears the plot first, filling it with `structure_void`, then the stone floor, then `air`, since a `fill` that changes nothing fails.
 - Its sign stands at the plot's south front, `~13 ~ ~`, as `oak_sign[rotation=0]` with `is_waxed:1b`. Its lines are translation keys, `<modid>.gallery.<scene>` for the feature's name and `<modid>.gallery.<scene>.<n>` for what it shows, in the Module's lang file. A scene of a gesture shows its result, and its sign says how to make it.
 - A scene is built working, from the Module, vanilla and the Modules it requires: power, fuel, items and fluid in place. It changes blocks, their contents, and the Module's own records for what it places; never time, weather, game rules or players.
-- A gallery has at most `GalleryCheck.MAX_SCENES` (12) scenes: the strip the check loads and clears holds no more.
+- A gallery has at most `GalleryCheck.MAX_SCENES` (12) scenes, which bounds the strip the check force-loads and clears; the largest README lists 9 features. It is built beside the test's structure, so any structure serves.
 - A command fails only by throwing, as vanilla's do; one that reports a failure and returns 0 passes the check unseen.
 
 ### Checking it in a game test
 
-`io.github._5thlayer.libworks.testkit.GalleryCheck`, in libworks-gametest, is the gallery test every Module runs. `builds` turns the pack on, runs the build as an operator player standing at `origin`, then clears the strip and turns the pack off, passing or failing:
+`io.github._5thlayer.libworks.testkit.GalleryCheck`, in libworks-gametest, is the gallery test every Module runs. `builds` turns the pack on, runs the build as an operator player standing at `origin`, then clears the strip and turns the pack off, passing or failing. Turning a pack on reloads the server's data under every test running with it, so the test is registered in a batch of its own: its own `TestEnvironmentDefinition`, as Voidworks' `testOnItsOwn` registers one:
 
 ```java
+// a Module's own helper, registering the test under an environment no other test uses
 tests.testOnItsOwn("the_gallery_builds_every_scene", GalleryCheck.TICKS,
         helper -> GalleryCheck.builds(helper, MyMod.MOD_ID, new BlockPos(0, 1, 8), List.of(
                 new GalleryCheck.Scene("harvester", new BlockPos(13, 0, -6), MyBlocks.HARVESTER.get()),
                 new GalleryCheck.Scene("oil_well", new BlockPos(13, 0, -6), MyBlocks.OIL_WELL.get()))));
 ```
 
-It fails when the pack is not offered or is on by default; when a function under `<modid>:gallery/` failed to load, naming the line that did not parse, as a block that no longer exists makes it; when a listed scene has no function; when a command in the build fails, naming it, in a scene function too; and when a scene's key block, given from where that scene runs, is not there or lies outside its plot. Turning a pack on reloads the server's data under every test running with it, so the test runs in a batch of its own. A scene that sets up records checks and clears them in a test of the Module's own, from `assertRuns`, `assertKeyBlocks`, `select` and `operator`.
+It fails when the pack is not offered or is on by default; when a function under `<modid>:gallery/` failed to load, naming the line that did not parse, as a block that no longer exists makes it; when a listed scene has no function; when a command in the build fails, naming it, in a scene function too; and when a scene's key block, given from where that scene runs, is not there or lies outside its plot. A scene that sets up records checks and clears them in a test of the Module's own, from `assertRuns`, `assertKeyBlocks`, `select` and `operator`.
 
 libworks' own sample gallery, a furnace and a hopper, is in `runtime/src/gametest/resources/gallery_pack/`, and `sh ./gradlew :runtime:runClient` offers it.
 

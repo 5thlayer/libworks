@@ -26,8 +26,8 @@ the release gate, not a player's world.
 
 **Considered.** Vanilla's `PackSource.FEATURE`, the source of the experimental packs, also never added
 automatically: world creation lists every such pack as an experiment. Running the build line by line
-so a failure names its command: a tracer on the command context, as `/debug function` uses, names it
-inside nested scene functions too, with the build run as the player runs it. The Showcase shipping
+so a failure names its command: it names a failure, but not one inside a nested scene function, which
+a tracer on the command context, as `/debug function` uses, does. The Showcase shipping
 the galleries: a pack with no content of its own (FactoryWorks ADR-0131), and a Module's own gallery
 reaches a player who installs it alone.
 
@@ -38,8 +38,11 @@ reaches a player who installs it alone.
   filling it with `structure_void` before `air`.
 - The build changes blocks and their contents. A scene may also set up the Module's own records for
   what it places, through the Module's own operator commands, such as Voidworks' Wells; the check
-  asserts nothing of them, and the Module's own test checks and clears them. It never changes time,
+  asserts nothing of them, and the Module's own test checks and clears them. This settles what
+  FactoryWorks #691 left open for a scene that needs more than blocks. The build never changes time,
   weather, game rules or players.
 - The check turns the pack on, which reloads the server's data, so a Module runs it in a game-test
   batch of its own.
-- The strip holds at most `GalleryCheck.MAX_SCENES` scenes, the area the check loads and clears.
+- The gallery is built beside the test's structure, not in it, so the structure does not bound it. The
+  check force-loads and clears the strip, which holds at most `GalleryCheck.MAX_SCENES` (12) scenes:
+  the largest README lists 9 features.

@@ -57,8 +57,12 @@ public final class GalleryCheck {
     public static final int PLOT_DEPTH = 13;
     /** A scene's plot, above its stone floor. */
     public static final int PLOT_HEIGHT = 16;
+    /** A scene's plot starts this many blocks east of where it is run. */
     public static final int FIRST_PLOT_EAST = 2;
-    /** The most scenes a gallery has: the strip the check loads and clears holds no more. */
+    /**
+     * The most scenes a gallery has, which bounds the strip the check force-loads and clears: the
+     * largest README lists 9 features. The gallery is built beside the test's structure, not in it.
+     */
     public static final int MAX_SCENES = 12;
 
     /** Two reloads and the build, with room to spare. A Module gives its gallery test this many ticks. */
@@ -92,8 +96,8 @@ public final class GalleryCheck {
         var strip = strip(at, scenes.size());
         var source = operator(helper, at);
         forceLoad(helper.getLevel(), strip);
-        helper.testInfo.addListener(new ClearAwayIfFailed(helper.getLevel(), strip, pack));
         var on = select(server, pack, true);
+        helper.testInfo.addListener(new ClearAwayIfFailed(helper.getLevel(), strip, pack, on));
         var off = new AtomicReference<CompletableFuture<Void>>();
         helper.startSequence()
                 .thenWaitUntil(() -> helper.assertTrue(on.isDone(), pack + " is not on yet"))
@@ -238,7 +242,7 @@ public final class GalleryCheck {
     }
 
     // The server drops a function that fails to parse with only a log line, so it is parsed again here
-    // to say why.
+    // to say why (ADR 0010).
     static List<String> loadFailures(CommandSourceStack source, String namespace) {
         var server = source.getServer();
         var failures = new ArrayList<String>();
@@ -268,14 +272,17 @@ public final class GalleryCheck {
         return box.intersectingChunks().allMatch(chunk -> level.hasChunk(chunk.x(), chunk.z()));
     }
 
-    /** Air above the strip's floor, its entities gone. The runner releases the forced chunks once the batch ends. */
+    /** Air where the strip stood, its floor too, its entities gone. The runner releases the forced chunks once the batch ends. */
     private static void clear(ServerLevel level, BoundingBox strip) {
-        StructureUtils.clearSpaceForStructure(new BoundingBox(strip.minX(), strip.minY() + 1, strip.minZ(),
-                strip.maxX(), strip.maxY(), strip.maxZ()), level);
+        StructureUtils.clearSpaceForStructure(strip, level);
     }
 
-    /** A failed test skips its own last steps, which would leave the pack on under the batches after it. */
-    private record ClearAwayIfFailed(ServerLevel level, BoundingBox strip, String pack) implements GameTestListener {
+    /**
+     * A failed test skips its own last steps, which would leave the pack on under the batches after it
+     * (ADR 0010). It turns the pack off only once turning it on is done, since two reloads race.
+     */
+    private record ClearAwayIfFailed(ServerLevel level, BoundingBox strip, String pack, CompletableFuture<Void> on)
+            implements GameTestListener {
 
         @Override
         public void testStructureLoaded(GameTestInfo testInfo) {
@@ -288,7 +295,8 @@ public final class GalleryCheck {
         @Override
         public void testFailed(GameTestInfo testInfo, GameTestRunner runner) {
             clear(level, strip);
-            select(level.getServer(), pack, false);
+            var server = level.getServer();
+            on.whenComplete((done, failed) -> server.execute(() -> select(server, pack, false)));
         }
 
         @Override

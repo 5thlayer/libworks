@@ -44,7 +44,6 @@ neoForge {
     addModdingDependenciesTo sourceSets.testkit
 
     runs {
-        // Offers the sample Gallery pack, from the gametest source set, to try by hand.
         client {
             client()
             gameDirectory = project.file('run/client')
@@ -53,6 +52,7 @@ neoForge {
             type = 'gameTestServer'
             gameDirectory = project.file('run/gametest')
             programArguments.addAll '--tests', 'libworks:*', '--report', gameTestReport.absolutePath
+            systemProperty 'libworks.gametest', 'true'
         }
     }
 

@@ -1,4 +1,4 @@
-# Filled with structure_void first, since a fill that changes nothing fails the build.
+# structure_void first: a fill that changes nothing fails the build (ADR 0010).
 fill ~2 ~-1 ~-12 ~25 ~15 ~ minecraft:structure_void
 fill ~2 ~-1 ~-12 ~25 ~-1 ~ minecraft:stone
 fill ~2 ~ ~-12 ~25 ~15 ~ minecraft:air

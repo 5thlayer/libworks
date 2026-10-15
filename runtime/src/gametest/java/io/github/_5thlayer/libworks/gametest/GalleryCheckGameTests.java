@@ -48,6 +48,8 @@ public final class GalleryCheckGameTests {
     private static final String FIXTURE = "gallery_fixture";
     private static final String FIXTURE_FOLDER = "gametest_packs/" + FIXTURE;
     private static final String FIXTURE_PACK = "mod/" + Libworks.MOD_ID + ":" + FIXTURE_FOLDER;
+    /** Set on the game test server run only: the dev client offers the sample without the fixtures. */
+    private static final boolean GAME_TEST_RUN = Boolean.getBoolean("libworks.gametest");
 
     private static final BlockPos ORIGIN = new BlockPos(0, 1, 8);
     private static final List<Scene> SAMPLE = List.of(
@@ -70,6 +72,9 @@ public final class GalleryCheckGameTests {
     @SubscribeEvent
     static void addPackFinders(AddPackFindersEvent event) {
         GalleryPack.addTo(event, Libworks.MOD_ID);
+        if (!GAME_TEST_RUN) {
+            return;
+        }
         event.addPackFinders(id(FIXTURE_FOLDER), PackType.SERVER_DATA, Component.literal(FIXTURE), PackSource.BUILT_IN, false, Pack.Position.TOP);
     }
 
@@ -81,7 +86,7 @@ public final class GalleryCheckGameTests {
     @SubscribeEvent
     static void registerTests(RegisterGameTestsEvent event) {
         var fixtures = event.registerEnvironment(id("gallery_check"), new TestEnvironmentDefinition.AllOf(List.of()));
-        // Turning a pack on reloads the server's data under every test running with it.
+        // Turning a pack on reloads the server's data under every test running with it (ADR 0010).
         var onItsOwn = event.registerEnvironment(id("gallery_check/sample"), new TestEnvironmentDefinition.AllOf(List.of()));
         register(event, onItsOwn, "gallery_check_passes_on_the_sample_gallery", GalleryCheck.TICKS,
                 helper -> GalleryCheck.builds(helper, Libworks.MOD_ID, ORIGIN, SAMPLE));
@@ -91,11 +96,18 @@ public final class GalleryCheckGameTests {
                 helper -> fails(helper, () -> GalleryCheck.assertOfferedAndOff(helper, FIXTURE_PACK), "on by default"));
         register(event, fixtures, "gallery_check_fails_on_a_failing_command_naming_it", 1,
                 helper -> fails(helper, () -> GalleryCheck.assertRuns(helper, operator(helper), GalleryPack.build(FIXTURE)),
-                        "`setblock ~ ~ ~ minecraft:stone`"));
+                        "`setblock ~ ~ ~ minecraft:gold_block replace`"));
         register(event, fixtures, "gallery_check_fails_on_a_scene_that_did_not_load_naming_its_line", 1,
                 helper -> fails(helper, () -> GalleryCheck.assertLoads(helper, operator(helper), FIXTURE), FIXTURE + ":gallery/renamed: Whilst parsing command on line 2"));
-        register(event, fixtures, "gallery_check_fails_on_a_key_block_out_of_place", 1,
-                helper -> fails(helper, () -> GalleryCheck.assertKeyBlocks(helper, helper.absolutePos(ORIGIN), SAMPLE), "scene furnace's"));
+        register(event, fixtures, "gallery_check_fails_on_a_key_block_out_of_place", 1, helper -> {
+            var origin = helper.absolutePos(ORIGIN);
+            helper.getLevel().setBlockAndUpdate(origin.offset(SAMPLE.getFirst().key()).east(), Blocks.FURNACE.defaultBlockState());
+            fails(helper, () -> GalleryCheck.assertKeyBlocks(helper, origin, SAMPLE.subList(0, 1)), "scene furnace's");
+        });
+        register(event, fixtures, "gallery_check_fails_on_a_key_outside_its_plot", 1,
+                helper -> fails(helper, () -> GalleryCheck.assertKeyBlocks(helper, helper.absolutePos(ORIGIN),
+                        List.of(new Scene("furnace", new BlockPos(GalleryCheck.FIRST_PLOT_EAST + GalleryCheck.PLOT_WIDTH, 0, -6), Blocks.FURNACE))),
+                        "outside its plot"));
     }
 
     private static void register(RegisterGameTestsEvent event, Holder<TestEnvironmentDefinition<?>> batch, String name, int maxTicks,
