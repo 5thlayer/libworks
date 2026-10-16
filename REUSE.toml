@@ -25,10 +25,33 @@ path = [
     "**/src/gametest/resources/**/*.nbt",
     "**/src/main/resources/**/*.nbt",
     "LICENSE",
+    "NOTICE",
     ".github/**",
 ]
 SPDX-FileCopyrightText = "2026 5thlayer"
 SPDX-License-Identifier = "MIT"
+
+# Third-party art, such as Malcolm Riley's unused textures
+# (https://github.com/malcolmriley/unused-textures), takes an override stanza of its own and an
+# entry in NOTICE that credits it. Unmodified copies, those a texture is built from under data/art/
+# included, are the author's; a texture scripts/build-textures.py builds from them is both. Module
+# CI runs that script's --check when it exists. Uncommenting a stanza needs the licence's text in
+# LICENSES/ (reuse download CC-BY-4.0), which reuse lint refuses while no file uses it.
+#
+# [[annotations]]
+# path = [
+#     "data/art/*.png",
+#     "src/main/resources/assets/examplelib/textures/block/plating/*.png",
+# ]
+# precedence = "override"
+# SPDX-FileCopyrightText = "Malcolm Riley"
+# SPDX-License-Identifier = "CC-BY-4.0"
+#
+# [[annotations]]
+# path = ["src/main/resources/assets/examplelib/textures/block/machine/front.png"]
+# precedence = "override"
+# SPDX-FileCopyrightText = ["Malcolm Riley", "2026 5thlayer"]
+# SPDX-License-Identifier = "CC-BY-4.0"
 
 # The Gradle wrapper is Gradle's.
 [[annotations]]

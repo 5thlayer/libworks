@@ -111,6 +111,12 @@ class FillTemplate(unittest.TestCase):
         self.assertNotIn("plugin/", reuse)
         self.assertNotIn('"scripts/', reuse)
 
+    def test_the_module_keeps_notice_with_no_entries_and_reuse_covers_it(self):
+        notice = self.text("NOTICE")
+        self.assertTrue(notice.startswith("Third-party material committed to this repository\n"), notice)
+        self.assertNotIn("Files:", notice)
+        self.assertRegex(self.text("REUSE.toml"), r'(?m)^    "NOTICE",$')
+
     def test_the_changelog_keeps_its_header_and_an_empty_unreleased(self):
         changelog = self.text("CHANGELOG.md")
         self.assertTrue(changelog.startswith("# Changelog\n"), changelog)

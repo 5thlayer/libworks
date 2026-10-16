@@ -11,6 +11,8 @@ plugins { id 'io.github.5thlayer.libworks.module' version '0.1.2' }
 
 Its CI is `.github/workflows/module-ci.yml`, called at the same tag: `uses: 5thlayer/libworks/.github/workflows/module-ci.yml@plugin-v<version>`. `fill-template.sh` writes both at the version `plugin/gradle.properties` holds. `module-ci.yml` reads the version from that `uses:` ref and fails when `build.gradle` applies another, so the two move together.
 
+Beside the build and `reuse lint`, it runs `python3 scripts/build-textures.py --check`, with Pillow, when the Module has that script, and skips it otherwise. The script is the Module's own: it builds the textures it commits, typically from third-party art kept unmodified under `data/art/`, and `--check` fails when a committed one differs from what it builds. The art is credited in `NOTICE` and licensed by an override stanza in `REUSE.toml`, whose commented example the template ships.
+
 An upstream is declared as `upstream('<name>') { range = '[0.5.4,0.6)' }`, with `tagPrefix` when its tags are not `<name>-v<version>`. The range's lower bound is the version the Module prefers and the one CI builds from its tag, so it must be a released version.
 
 An upstream with `optional = true` goes on `localRuntime`, a configuration the plugin creates (or takes over, when the Module declares one) and `runtimeClasspath` extends: the dev runs load it, and the published jar, pom and module metadata do not depend on it. `libworksUpstreams` still lists it, so CI builds its tag, and `-PsiblingBuilds` still checks its range.

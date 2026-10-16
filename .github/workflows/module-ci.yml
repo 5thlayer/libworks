@@ -78,3 +78,21 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: fsfe/reuse-action@v6
+
+  # A Module whose textures scripts/build-textures.py builds, such as those made from third-party
+  # art (NOTICE), commits what the script writes; --check fails when one differs. Without the
+  # script there is nothing to check.
+  textures:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - id: script
+        run: |
+          if [ -f scripts/build-textures.py ]; then echo "found=true" >> "$GITHUB_OUTPUT"; fi
+
+      - if: steps.script.outputs.found == 'true'
+        run: pip install pillow
+
+      - if: steps.script.outputs.found == 'true'
+        run: python3 scripts/build-textures.py --check
