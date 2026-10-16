@@ -6,6 +6,7 @@ package io.github._5thlayer.libworks.plugin
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.artifacts.repositories.MavenArtifactRepository
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.publish.maven.tasks.PublishToMavenLocal
 import org.gradle.api.tasks.Exec
@@ -31,10 +32,23 @@ class ModulePlugin implements Plugin<Project> {
         project.version = property('mod_version')
         project.base.archivesName = property('archives_name')
         // Where Consumers resolve the Modules from, and where the Module publishes (release-train).
-        // mavenLocal() says where that is, and is removed again: only a Module's filtered ~/.m2 repo resolves.
+        // Every io.github.5thlayer artifact resolves from ~/.m2 and no other repository, and ~/.m2 serves
+        // nothing else (libworks#18). By group, so an upstream's own upstreams and dev-only Modules pass too.
         def local = project.repositories.mavenLocal()
         project.repositories.remove(local)
         def mavenLocal = new File(local.url.path)
+        def m2 = null
+        project.repositories.exclusiveContent {
+            it.forRepository { m2 = project.repositories.mavenLocal { it.name = 'libworksM2' } }
+            it.filter { it.includeGroup 'io.github.5thlayer' }
+        }
+        // A Module's own exclusive ~/.m2 shuts this one out and is shut out by it, so Gradle finds the
+        // Modules nowhere and says only that; this names the block to delete, in either form.
+        project.afterEvaluate {
+            def own = project.repositories.withType(MavenArtifactRepository).findAll { it != m2 && it.url == local.url }
+            if (own) throw new GradleException(
+                    "${property('mod_id')} declares its own ~/.m2 repository (${own*.name.join(', ')}), which the plugin declares itself (libworks#18): delete its mavenLocal block from repositories")
+        }
 
         // Optional upstreams: on the dev runs' classpath, never in the published jar, pom or module metadata.
         def localRuntime = project.configurations.maybeCreate('localRuntime')

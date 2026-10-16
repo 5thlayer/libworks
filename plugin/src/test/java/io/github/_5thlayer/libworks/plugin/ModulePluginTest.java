@@ -60,9 +60,6 @@ class ModulePluginTest {
                 tasks.register('extendsLocalRuntime') {
                     doLast { println configurations.runtimeClasspath.extendsFrom*.name.contains('localRuntime') }
                 }
-                tasks.register('repositoryNames') {
-                    doLast { repositories.each { println it.name } }
-                }
                 tasks.register('gametestReaches') {
                     doLast { println(['compileOnly', 'localRuntime'].collect { configurations[it].extendsFrom*.name.contains('libworksGametest') }.join(' ')) }
                 }
@@ -237,11 +234,62 @@ class ModulePluginTest {
         assertEquals("versionRange = \"[0.1.3,0.2)\"\n", processedModsToml());
     }
 
-    @Test
-    void leavesNoUnfilteredMavenLocalRepository() throws IOException {
+    /** A jar and its pom for group:name:1.0 in the Maven repository at repo. */
+    private static void publish(Path repo, String group, String name) throws IOException {
+        Path dir = Files.createDirectories(repo.resolve(group.replace('.', '/') + "/" + name + "/1.0"));
+        Files.writeString(dir.resolve(name + "-1.0.pom"), """
+                <project><modelVersion>4.0.0</modelVersion><groupId>%s</groupId><artifactId>%s</artifactId><version>1.0</version></project>
+                """.formatted(group, name));
+        Files.write(dir.resolve(name + "-1.0.jar"), new byte[0]);
+    }
+
+    /**
+     * Resolves each coordinate on its own, with ~/.m2 at elsewhere/m2 and the Module's own ordinary repository
+     * at elsewhere/other, unfiltered as cursemaven is: prints the repository each came from, or none.
+     */
+    private String resolvedFrom(String... coordinates) throws IOException {
+        Path m2 = elsewhere.resolve("m2");
+        Path other = elsewhere.resolve("other");
+        publish(m2, "io.github.5thlayer", "groundworks");
+        publish(m2, "org.example", "local-only");
+        publish(other, "io.github.5thlayer", "wireworks");
+        publish(other, "org.example", "elsewhere");
         buildScript("");
-        String out = build("-q", "repositoryNames").getOutput();
-        assertFalse(out.contains("MavenLocal"), out);
+        appendBuildScript("""
+                repositories { maven { url = '%s' } }
+                tasks.register('resolvedFrom') {
+                    doLast {
+                        %s.each { c ->
+                            def files = configurations.detachedConfiguration(dependencies.create(c)).incoming.artifactView { lenient = true }.files.files
+                            println "$c ${files ? files.first().path.contains('/m2/') ? 'm2' : 'other' : 'none'}"
+                        }
+                    }
+                }
+                """.formatted(other.toUri(), List.of(coordinates).stream().map(c -> "'" + c + "'").toList()));
+        return build("-q", "-Dmaven.repo.local=" + m2, "resolvedFrom").getOutput().replace("\r", "");
+    }
+
+    @Test
+    void resolvesThe5thlayerGroupFromMavenLocalAloneAndNothingElseFromIt() throws IOException {
+        assertEquals("""
+                io.github.5thlayer:groundworks:1.0 m2
+                io.github.5thlayer:wireworks:1.0 none
+                org.example:local-only:1.0 none
+                org.example:elsewhere:1.0 other
+                """, resolvedFrom("io.github.5thlayer:groundworks:1.0", "io.github.5thlayer:wireworks:1.0",
+                "org.example:local-only:1.0", "org.example:elsewhere:1.0"));
+    }
+
+    @Test
+    void refusesAModulesOwnMavenLocalInEitherForm() throws IOException {
+        for (String own : List.of(
+                "mavenLocal { content { includeModule 'io.github.5thlayer', 'groundworks' } }",
+                "exclusiveContent { forRepository { mavenLocal() }; filter { includeModule 'io.github.5thlayer', 'groundworks' } }")) {
+            buildScript("");
+            appendBuildScript("repositories { " + own + " }\n");
+            String out = fail("help").getOutput();
+            assertTrue(out.contains("beltworks declares its own ~/.m2 repository (MavenLocal), which the plugin declares itself (libworks#18)"), out);
+        }
     }
 
     @Test

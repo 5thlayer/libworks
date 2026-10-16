@@ -24,3 +24,9 @@ plugin.
 permanent, for no gain: CI already builds upstream Modules from their tags into a runner's
 `~/.m2`. Fetching the scripts separately would give them a second version to keep in step. Per-mod
 settings for game-test structures and upload checks would have served two Modules each.
+
+**Amended 2026-10-16 (#18).** The plugin declares the Module's `~/.m2` repository itself, exclusive
+for the `io.github.5thlayer` group, and refuses one the Module declares. Each Module had kept its own
+list of modules, in one of two forms, and only `exclusiveContent` stopped other repositories serving
+5thlayer coordinates. A filter built from the extension's upstreams would have missed an upstream's
+own upstreams and Modules only the dev client loads, so it is by group.

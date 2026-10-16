@@ -14,16 +14,8 @@ libworks {
     runtime = '0.1.8'
 }
 
-repositories {
-    // libworks-runtime and libworks-gametest, from the local maven only, where their releases publish them.
-    // CI builds the runtime's tag there first.
-    mavenLocal {
-        content {
-            includeModule 'io.github.5thlayer', 'libworks-runtime'
-            includeModule 'io.github.5thlayer', 'libworks-gametest'
-        }
-    }
-}
+// libworks-runtime and libworks-gametest come from ~/.m2, the one repository the plugin gives every
+// io.github.5thlayer module (libworks#18). CI builds the runtime's tag there first.
 
 // The template's own checks run its plugin's tests too; a Module has no plugin/ build.
 if (gradle.includedBuilds.any { it.name == 'plugin' }) {

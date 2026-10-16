@@ -138,9 +138,9 @@ class FillTemplate(unittest.TestCase):
         # What the plugin provides and the libworks { } example stay as the template words them.
         self.assertIn("buildGametestStructures tasks", build)
         self.assertIn("upstream('groundworks')", build)
-        # The Works tab the template starts with (#26): the runtime it nests and the repository it comes from.
+        # The Works tab the template starts with (#26): the runtime it nests, from the ~/.m2 the plugin declares (#18).
         self.assertIn("runtime = '0.1.8'", build)
-        self.assertIn("includeModule 'io.github.5thlayer', 'libworks-gametest'", build)
+        self.assertNotIn("mavenLocal", build)
 
     def test_the_works_tab_and_its_game_test_move_to_the_module_s_id(self):
         package = self.repo / "src/main/java/io/github/_5thlayer/craftworks"
