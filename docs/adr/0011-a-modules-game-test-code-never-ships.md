@@ -36,6 +36,8 @@ already names it.
 - The plugin change breaks a Module whose `main` still compiles against libworks-gametest, so it
   releases as plugin 0.4.0 (ADR 0001), and every Module moves through `template-drift`, each adding
   a `## Unreleased` line that its game-test code no longer ships.
+- ADR 0008's "`compileOnly` and `localRuntime`" becomes the `gametest` source set's `compileOnly` and
+  `localRuntime`.
 - The `<modid>.gametest` properties, and the `isGametestEnabled()` checks around registration, go.
   `libworks.run` stays, to tell `DevPacks` which pack to switch on.
 - Test blocks also register in the Module's own dev client, where `/test` runs its game tests.

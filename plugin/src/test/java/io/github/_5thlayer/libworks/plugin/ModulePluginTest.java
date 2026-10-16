@@ -189,7 +189,7 @@ class ModulePluginTest {
     }
 
     /** A stand-in libworks-gametest: a jar holding {@code testkit.Check}, on {@code libworksGametest}. */
-    private void gametestJar() throws IOException {
+    private void addStandInGametestJar() throws IOException {
         Path source = Files.createDirectories(elsewhere.resolve("testkit")).resolve("Check.java");
         Files.writeString(source, "package testkit; public final class Check { public static void run() {} }\n");
         Path classes = Files.createDirectories(elsewhere.resolve("classes"));
@@ -206,7 +206,7 @@ class ModulePluginTest {
     @Test
     void compilesOnlyTheGametestSourceSetAgainstLibworksGametest() throws IOException {
         buildScript("");
-        gametestJar();
+        addStandInGametestJar();
         write("src/gametest/java/belt/Tests.java", "package belt; final class Tests { static void run() { testkit.Check.run(); } }\n");
         build("compileGametestJava");
         assertTrue(Files.isRegularFile(module.resolve("build/classes/java/gametest/belt/Tests.class")));
