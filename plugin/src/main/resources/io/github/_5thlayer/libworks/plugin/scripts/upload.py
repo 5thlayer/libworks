@@ -190,10 +190,23 @@ class Release:
         self.notes = changelog(version)
         self.record = self.jar.with_name(f"{artifact}-{version}.uploads.json")
 
-    def recorded(self, site):
-        """The record's entry for the site, refused unless this is a dry run, which only shows it."""
-        entry = json.loads(self.record.read_text()).get(site) if self.record.is_file() else None
-        name = SITES[site][0]
+    def entries(self):
+        """The upload record's entries by site, none before the first upload; a damaged record is refused."""
+        if not self.record.is_file():
+            return {}
+        try:
+            entries = json.loads(self.record.read_text())
+            if all({"id", "uploadedAt"} <= entry.keys() for entry in entries.values()):
+                return entries
+        except (OSError, ValueError, AttributeError):
+            pass
+        raise Refused(f"{self.record} isn't an upload record, each site's entry with its id and uploadedAt; "
+                      "mend it by hand, keeping every upload it records.")
+
+    def refuse_if_recorded(self, site):
+        """Refuses a site the record holds an upload to; a dry run only shows what it holds."""
+        entry = self.entries().get(site)
+        name = site_name(site)
         if self.dry_run:
             print(f"recorded: {site} {entry['id']} at {entry['uploadedAt']}" if entry else f"no record: {site} in {self.record}")
         elif entry:
@@ -201,16 +214,17 @@ class Release:
                             f"{entry['uploadedAt']}, as {self.record} records, and a published version never "
                             f"changes. Remove its \"{site}\" entry only if {name} rejected that file or never showed it.")
 
-    def uploaded(self, site, file_id):
-        """Records the site's upload beside the jar, keeping the other site's entry."""
-        print(f"Uploaded {self.jar.name} to {SITES[site][0]} as {self.version} ({file_id})")
+    def record_upload(self, site, file_id):
+        """Records the site's upload beside the jar, keeping the other site's entry, then reports it."""
         try:
-            entries = json.loads(self.record.read_text()) if self.record.is_file() else {}
+            entries = self.entries()
             entries[site] = {"id": file_id, "uploadedAt": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")}
             self.record.write_text(json.dumps(entries, indent=2) + "\n")
-        except OSError as error:
-            raise Unrecorded(f"uploaded as {file_id}, but {self.record} couldn't record it ({error.strerror}); "
-                             f"add its \"{site}\" entry by hand, so the upload is never repeated.") from None
+        except (Refused, OSError) as error:
+            raise Unrecorded(f"uploaded as {file_id}, but it isn't recorded ({getattr(error, 'strerror', None) or error}); add its \"{site}\" entry "
+                             f"to {self.record} by hand, so the upload is never repeated.") from None
+        finally:
+            print(f"Uploaded {self.jar.name} to {site_name(site)} as {self.version} ({file_id})")
 
     def file_part(self):
         return "file", self.jar.name, "application/java-archive", self.data
@@ -238,7 +252,7 @@ class Release:
         }
         headers = {"Authorization": secret, "User-Agent": self.agent}
         listing = f"{api}/project/{project}/version"
-        self.recorded("modrinth")
+        self.refuse_if_recorded("modrinth")
         if self.dry_run:
             show("GET", listing, headers)
             show("POST", f"{api}/version", headers, data=json.dumps(metadata, indent=2), file=self.described())
@@ -249,7 +263,7 @@ class Release:
         content_type, body = multipart([("data", None, "application/json", json.dumps(metadata).encode()),
                                         self.file_part()])
         created = send("POST", f"{api}/version", {**headers, "Content-Type": content_type}, body)
-        self.uploaded("modrinth", created.get("id"))
+        self.record_upload("modrinth", created.get("id"))
 
     def curseforge(self):
         secret = token("CURSEFORGE_TOKEN")
@@ -268,7 +282,7 @@ class Release:
         required = dependencies("curseforge", self.props)
         if required:
             metadata["relations"] = {"projects": [{"slug": d, "type": "requiredDependency"} for d in required]}
-        self.recorded("curseforge")
+        self.refuse_if_recorded("curseforge")
         if self.dry_run:
             show("GET", files, api_headers)
             show("GET", f"{upload}/api/game/version-types", upload_headers)
@@ -288,7 +302,7 @@ class Release:
                                         self.file_part()])
         created = send("POST", f"{upload}/api/projects/{project}/upload-file",
                        {**upload_headers, "Content-Type": content_type}, body)
-        self.uploaded("curseforge", created.get("id"))
+        self.record_upload("curseforge", created.get("id"))
 
     def curseforge_files(self, url, headers):
         """The file and display names of every file the project has, across the listing's pages."""
@@ -321,6 +335,10 @@ class Release:
 
 
 SITES = {"modrinth": ("Modrinth", Release.modrinth), "curseforge": ("CurseForge", Release.curseforge)}
+
+
+def site_name(site):
+    return SITES[site][0]
 
 
 def main(args):

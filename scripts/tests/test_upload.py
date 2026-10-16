@@ -113,8 +113,11 @@ class Upload(unittest.TestCase):
         for record in self.maven.rglob("*.uploads.json"):
             record.unlink()
 
+    def record_path(self, version="0.3.9"):
+        return self.maven / "io/github/5thlayer/examplelib" / version / f"examplelib-{version}.uploads.json"
+
     def record(self, version="0.3.9"):
-        path = self.maven / "io/github/5thlayer/examplelib" / version / f"examplelib-{version}.uploads.json"
+        path = self.record_path(version)
         return json.loads(path.read_text()) if path.is_file() else None
 
     def assertRefusedBeforeAnyRequest(self, result, message):
@@ -341,16 +344,15 @@ exec "$@"
         self.publish("0.3.9")
         self.site.in_review = True
         self.upload("0.3.9")
-        path = self.maven / "io/github/5thlayer/examplelib/0.3.9/examplelib-0.3.9.uploads.json"
         record = self.record()
         del record["curseforge"]
-        path.write_text(json.dumps(record))
+        self.record_path().write_text(json.dumps(record))
         self.assertEqual(self.upload("--site", "curseforge", "0.3.9").returncode, 0)
         self.assertEqual(len(self.site.sent("POST", "/cf-upload/")), 2)
 
     def test_a_record_that_cannot_be_written_fails_without_a_retry(self):
-        folder = self.maven / "io/github/5thlayer/examplelib/0.3.9"
         self.publish("0.3.9")
+        folder = self.record_path().parent
         folder.chmod(0o555)
         self.addCleanup(folder.chmod, 0o755)
         result = self.upload("--site", "curseforge", "0.3.9")
@@ -359,6 +361,17 @@ exec "$@"
         self.assertIn("examplelib-0.3.9.uploads.json", result.stderr)
         self.assertNotIn("retry", result.stderr)
         self.curseforge_post()
+
+    def test_a_damaged_record_is_refused_before_contacting_a_site(self):
+        self.publish("0.3.9")
+        for damaged in ["{", "[]", '{"curseforge": {"id": 4242}}']:
+            with self.subTest(damaged):
+                self.record_path().write_text(damaged)
+                result = self.upload("0.3.9")
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("isn't an upload record", result.stderr)
+                self.assertNotIn("Traceback", result.stderr)
+                self.assertEqual(self.site.sent("POST", "/"), [])
 
     def test_a_dry_run_shows_the_record_and_writes_none(self):
         self.publish("0.3.9")
