@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "git fetch -q origin main 2>/dev/null; set -- $(git rev-list --left-right --count main...origin/main 2>/dev/null); [ \"${1:-0}\" != 0 ] || [ \"${2:-0}\" != 0 ] && echo \"Local main is $1 commit(s) ahead of and $2 behind origin/main: bring it up to date before building on it.\"; true",
+            "timeout": 30,
+            "statusMessage": "Checking main against origin"
+          }
+        ]
+      }
+    ]
+  }
+}
