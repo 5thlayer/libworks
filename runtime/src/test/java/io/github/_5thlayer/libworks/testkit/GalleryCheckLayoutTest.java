@@ -24,6 +24,12 @@ class GalleryCheckLayoutTest {
     }
 
     @Test
+    void oneRowHoldsTheLargestGallery() {
+        int last = GalleryCheck.MAX_SCENES - 1;
+        assertEquals(ORIGIN.east(last * GalleryCheck.PLOT_WIDTH), Layout.ONE_ROW.sceneOrigin(ORIGIN, last));
+    }
+
+    @Test
     void rowsStartAgainAtTheWestEndFurtherNorth() {
         assertEquals(ORIGIN.east(2 * GalleryCheck.PLOT_WIDTH), THREES.sceneOrigin(ORIGIN, 2));
         assertEquals(ORIGIN.north(16), THREES.sceneOrigin(ORIGIN, 3));

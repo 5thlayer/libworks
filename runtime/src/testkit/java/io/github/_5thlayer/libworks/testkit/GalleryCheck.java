@@ -62,10 +62,10 @@ public final class GalleryCheck {
     /** A scene's plot starts this many blocks east of where it is run. */
     public static final int FIRST_PLOT_EAST = 2;
     /**
-     * The most scenes a gallery has, which bounds the plots the check force-loads and clears: the
-     * largest README lists 9 features. The gallery is built beside the test's structure, not in it.
+     * The most scenes a gallery has, which bounds the plots the check force-loads and clears, with
+     * room above the largest gallery. The gallery is built beside the test's structure, not in it.
      */
-    public static final int MAX_SCENES = 12;
+    public static final int MAX_SCENES = 16;
 
     /** Two reloads and the build, with room to spare. A Module gives its gallery test this many ticks. */
     public static final int TICKS = 1_200;

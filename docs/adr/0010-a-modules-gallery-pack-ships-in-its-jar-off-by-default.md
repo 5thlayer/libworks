@@ -44,5 +44,5 @@ reaches a player who installs it alone.
 - The check turns the pack on, which reloads the server's data, so a Module runs it in a game-test
   batch of its own.
 - The gallery is built beside the test's structure, not in it, so the structure does not bound it. The
-  check force-loads and clears the strip, which holds at most `GalleryCheck.MAX_SCENES` (12) scenes:
-  the largest README lists 9 features.
+  check force-loads and clears the plots, at most `GalleryCheck.MAX_SCENES` of them, a bound on the
+  area it loads, raised as a gallery outgrows it.
