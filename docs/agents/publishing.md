@@ -19,7 +19,7 @@ Most answers are in the repo. Keep them the same on both sites and in the repo: 
 | Environment | Client and Server, as the `upload` task sends |
 | Dependencies | `modrinth_dependencies` and `curseforge_dependencies` in `gradle.properties` |
 
-What the repo lacks: the icon, any gallery images, and the categories. The icon and gallery must show the Module honestly and must not be AI-generated on Modrinth ([§5.5, §6.2](https://modrinth.com/legal/rules)).
+What the repo lacks: the icon, any gallery images, and the categories. The icon and gallery must show the Module honestly and must not be AI-generated on Modrinth ([§5.5, §6.2](https://modrinth.com/legal/rules)). Neither may hold Mojang's art, and neither may the jar: a Module ships nothing of Mojang's and uses vanilla models and textures only at runtime (libworks ADR 0012).
 
 ## Modrinth
 
