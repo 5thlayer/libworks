@@ -21,3 +21,5 @@ a modpack could find and lean on. In `src/main` behind a jar exclude: an exclude
 with each Module's folders. The pack finder in libworks-runtime: test-only code in every player's
 jar, and the runtime required of any Module with a pack. Where the game-test code itself lives,
 still in `src/main` and shipped, is #17.
+
+_Since ADR 0011, the game-test code lives in the `gametest` source set too._

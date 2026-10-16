@@ -24,5 +24,6 @@ cleaner home, but a cross-Module change this one need not wait for.
 - While a Module's game tests stay in `src/main` (#17), its jar holds a class that names
   libworks-gametest. It loads without it and fails only if run, which the Module's `*.gametest`
   switch prevents. Once #17 moves them out, the dependency moves to the `gametest` source set.
+  ADR 0011 settles #17 that way.
 - The runtime's own game tests load the testkit as part of the `libworks` mod in dev, not as the
   published jar; a Module's run is the first to load the `GAMELIBRARY` jar itself.

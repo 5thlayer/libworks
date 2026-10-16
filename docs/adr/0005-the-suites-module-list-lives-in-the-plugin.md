@@ -15,7 +15,7 @@ holds data or assets in its namespace, names it as a string in code, or requires
 `factoryworks` (FactoryWorks ADR-0128). It reads the resources as `processResources` leaves them, so
 generated ones count. A new Module reaches the others by a plugin release they move to. The game-test
 side of playing alone, and the check of the tags a Module's code reads against its game test, stay in
-each Module (#17).
+each Module (#17), in its `gametest` source set since ADR 0011.
 
 **Considered.** A test-fixtures artifact, `libworks-testing`: a third artifact to version and release
 beside the plugin and the runtime, and a test in each Module that can still miss a folder it ships. The
