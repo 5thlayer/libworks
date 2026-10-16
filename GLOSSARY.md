@@ -33,5 +33,5 @@ _Avoid_: debug pack, test pack
 ### Shipped packs
 
 **Gallery pack**:
-A datapack in this Module's jar, off until a player turns it on, whose functions build a working scene of each of the Module's features, each with a sign naming it. Functions only: turning it on changes nothing about how the Module plays (ADR 0010).
+A datapack in this Module's jar, off until a player turns it on, whose functions build a working scene of each of the Module's features, each with a sign naming it. Functions only: turning it on changes nothing about how the Module plays (libworks ADR 0010).
 _Avoid_: demo pack, showcase pack, gallery datapack
