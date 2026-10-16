@@ -10,6 +10,7 @@ import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.publish.maven.tasks.PublishToMavenLocal
 import org.gradle.api.tasks.Exec
 import org.gradle.api.tasks.JavaExec
+import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.jvm.toolchain.JavaLanguageVersion
@@ -39,16 +40,18 @@ class ModulePlugin implements Plugin<Project> {
         // Optional upstreams: on the dev runs' classpath, never in the published jar, pom or module metadata.
         def localRuntime = project.configurations.maybeCreate('localRuntime')
         project.configurations.named('runtimeClasspath') { it.extendsFrom localRuntime }
-        // libworks-gametest (libworks ADR 0008): compiled against by the gametest source set alone, so main
-        // never names it (ADR 0011), and on the dev runs, never published. A run on a source set of its own,
-        // without localRuntime, extends it too.
-        def gametest = project.configurations.create('libworksGametest') {
+        // What only the Module's own runs load, and the jar leaves out: its dev and game-test packs (ADR 0004),
+        // and its game-test code and test-only resources (ADR 0011).
+        def gametest = project.sourceSets.maybeCreate('gametest')
+        // libworks-gametest (ADR 0008): compiled against by the gametest source set alone, so main never names
+        // it (ADR 0011), and on the dev runs, never published. A run on a source set of its own, without
+        // localRuntime, extends it too.
+        def libworksGametest = project.configurations.create('libworksGametest') {
             it.canBeConsumed = false
             it.canBeResolved = false
         }
-        def gametestSources = project.sourceSets.maybeCreate('gametest')
-        project.configurations.named(gametestSources.compileOnlyConfigurationName) { it.extendsFrom gametest }
-        localRuntime.extendsFrom gametest
+        project.configurations.named(gametest.compileOnlyConfigurationName) { it.extendsFrom libworksGametest }
+        localRuntime.extendsFrom libworksGametest
         def libworks = project.extensions.create('libworks', LibworksExtension, project)
 
         project.java.withSourcesJar()
@@ -57,7 +60,7 @@ class ModulePlugin implements Plugin<Project> {
         // The Minecraft version goes in the jar's name, not the Module's version: beltworks-26.1.2-0.3.0.jar.
         project.tasks.withType(Jar).configureEach { it.archiveVersion = "${property('minecraft_version')}-${property('mod_version')}" }
 
-        configureNeoForge(project, property)
+        configureNeoForge(project, property, gametest)
         configureTests(project)
         configureLicensing(project)
         configurePlaysAlone(project, property)
@@ -67,13 +70,10 @@ class ModulePlugin implements Plugin<Project> {
         configureScripts(project, libworks)
     }
 
-    private static void configureNeoForge(Project project, Closure<String> property) {
+    private static void configureNeoForge(Project project, Closure<String> property, SourceSet gametest) {
         def gameTestReport = project.layout.buildDirectory.file('reports/gametest.xml').get().asFile
         def modId = property('mod_id')
-        // What only the Module's own runs load, and the jar leaves out: its dev and game-test packs (ADR 0004),
-        // and its game-test code and test-only resources (ADR 0011).
-        // Its code builds on the Module's own and the Module's dependencies.
-        def gametest = project.sourceSets.maybeCreate('gametest')
+        // The gametest source set's code builds on the Module's own and the Module's dependencies.
         project.configurations.named(gametest.implementationConfigurationName) { it.extendsFrom project.configurations.implementation }
         project.dependencies.add(gametest.implementationConfigurationName, project.sourceSets.main.output)
         project.neoForge {
