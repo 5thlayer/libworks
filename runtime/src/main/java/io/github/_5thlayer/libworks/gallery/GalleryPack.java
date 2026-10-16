@@ -48,6 +48,14 @@ public final class GalleryPack {
         return Identifier.fromNamespaceAndPath(modId, "gallery/build");
     }
 
+    /**
+     * The function that clears one scene's plot, run from where the scene is run, removing what it
+     * placed as a player's world would; a pack may leave it out.
+     */
+    public static Identifier clear(String modId) {
+        return Identifier.fromNamespaceAndPath(modId, "gallery/clear");
+    }
+
     /** The function that builds one scene. */
     public static Identifier scene(String modId, String scene) {
         return Identifier.fromNamespaceAndPath(modId, "gallery/" + scene);

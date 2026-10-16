@@ -11,6 +11,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 
 import com.mojang.authlib.GameProfile;
 import io.github._5thlayer.libworks.gallery.GalleryPack;
@@ -27,6 +28,7 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.gametest.framework.GameTestInfo;
 import net.minecraft.gametest.framework.GameTestListener;
 import net.minecraft.gametest.framework.GameTestRunner;
+import net.minecraft.gametest.framework.GameTestSequence;
 import net.minecraft.gametest.framework.StructureUtils;
 import net.minecraft.resources.FileToIdConverter;
 import net.minecraft.resources.Identifier;
@@ -46,12 +48,12 @@ import net.neoforged.neoforge.common.util.FakePlayer;
  * it. It looks at the world, never at how the functions are written. It ships in libworks-gametest,
  * which a Module runs its game tests with and never nests.
  *
- * <p>{@link #builds} turns the pack on, which reloads the server's data under every test running
- * with it, so the Module registers the test in a batch of its own.
+ * <p>{@link #builds} and {@link #withPack} turn the pack on, which reloads the server's data under
+ * every test running with it, so the Module registers each such test in a batch of its own.
  */
 public final class GalleryCheck {
 
-    /** A scene's plot, along the strip: from 2 blocks east of where it is run. */
+    /** A scene's plot, along its row: from 2 blocks east of where it is run. */
     public static final int PLOT_WIDTH = 24;
     /** A scene's plot, from its sign's row at the origin's z to 12 blocks north. */
     public static final int PLOT_DEPTH = 13;
@@ -60,7 +62,7 @@ public final class GalleryCheck {
     /** A scene's plot starts this many blocks east of where it is run. */
     public static final int FIRST_PLOT_EAST = 2;
     /**
-     * The most scenes a gallery has, which bounds the strip the check force-loads and clears: the
+     * The most scenes a gallery has, which bounds the plots the check force-loads and clears: the
      * largest README lists 9 features. The gallery is built beside the test's structure, not in it.
      */
     public static final int MAX_SCENES = 12;
@@ -78,43 +80,101 @@ public final class GalleryCheck {
     public record Scene(String name, BlockPos key, Block block) {
     }
 
+    /**
+     * How a gallery lays its scenes, in the order {@code build} runs them: {@code perRow} plots a row,
+     * each a plot east of the last, and each row {@code rowDepth} blocks north of the one before. A
+     * row depth under {@link #PLOT_DEPTH} would lay a row's plots over the last's.
+     */
+    public record Layout(int perRow, int rowDepth) {
+
+        /** Every scene a plot east of the last, in one row: the layout {@code build} follows unless a Module says otherwise. */
+        public static final Layout ONE_ROW = new Layout(MAX_SCENES, PLOT_DEPTH);
+
+        public Layout {
+            if (perRow < 1) {
+                throw new IllegalArgumentException("a row holds at least one scene, not " + perRow);
+            }
+            if (rowDepth < PLOT_DEPTH) {
+                throw new IllegalArgumentException("rows " + rowDepth + " blocks apart overlap, since a plot is " + PLOT_DEPTH + " deep");
+            }
+        }
+
+        /** Where scene {@code index} of a gallery run from {@code origin} is run from. */
+        public BlockPos sceneOrigin(BlockPos origin, int index) {
+            return origin.north(rowDepth * (index / perRow)).east(PLOT_WIDTH * (index % perRow));
+        }
+
+        /** The area the first {@code plots} plots of a gallery run from {@code origin} cover, their floors included. */
+        public BoundingBox area(BlockPos origin, int plots) {
+            int lastRow = (plots - 1) / perRow;
+            int columns = Math.min(plots, perRow);
+            var farthest = origin.north(rowDepth * lastRow).east(PLOT_WIDTH * (columns - 1));
+            return BoundingBox.encapsulatingBoxes(List.of(plot(origin), plot(farthest))).orElseThrow();
+        }
+    }
+
     private GalleryCheck() {
     }
 
     /**
      * Turns {@code modId}'s Gallery pack on, runs its build as an operator player standing at
-     * {@code origin}, relative to the test, checks every scene, then clears the strip and turns the
+     * {@code origin}, relative to the test, checks every scene, then clears the plots and turns the
      * pack off, passing or failing. Succeeds the test when every check holds.
      */
     public static void builds(GameTestHelper helper, String modId, BlockPos origin, List<Scene> scenes) {
+        builds(helper, modId, origin, Layout.ONE_ROW, scenes);
+    }
+
+    /** As {@link #builds(GameTestHelper, String, BlockPos, List)}, for a gallery that lays its scenes by {@code layout}. */
+    public static void builds(GameTestHelper helper, String modId, BlockPos origin, Layout layout, List<Scene> scenes) {
+        helper.assertTrue(!scenes.isEmpty() && scenes.size() <= MAX_SCENES,
+                "a gallery has 1 to " + MAX_SCENES + " scenes, not " + scenes.size());
+        var server = helper.getLevel().getServer();
+        withPack(helper, modId, origin, layout, scenes.size(), (source, steps) -> steps.thenExecute(() -> {
+            assertLoads(helper, source, modId);
+            for (var scene : scenes) {
+                helper.assertTrue(server.getFunctions().get(GalleryPack.scene(modId, scene.name())).isPresent(),
+                        "there is no scene function " + GalleryPack.scene(modId, scene.name()));
+            }
+            assertRuns(helper, source, GalleryPack.build(modId));
+            assertKeyBlocks(helper, helper.absolutePos(origin), layout, scenes);
+        })).thenSucceed();
+    }
+
+    /**
+     * Turns {@code modId}'s Gallery pack on over the gallery's first {@code plots} plots, laid out by
+     * {@code layout} from {@code origin}, relative to the test; once it is on and the plots loaded, runs
+     * the test's own {@code steps}, which {@code steps} adds to the sequence it is given, with an
+     * operator player's source standing at {@code origin} to build from; then clears the plots away and
+     * turns the pack off, passing or failing. A scene run on its own from {@code origin} stands on the
+     * first plot.
+     *
+     * <p>Clearing runs the pack's {@code <modid>:gallery/clear} from each plot when it has one, which
+     * removes what the scene placed as a player's world would, then sets the plots to air with their
+     * entities gone. The pack is turned on, which reloads the server's data under every test running
+     * with it, so the test is registered in a batch of its own.
+     *
+     * @return the test's sequence, done once the pack is off: the caller ends it, as {@code .thenSucceed()}
+     */
+    public static GameTestSequence withPack(GameTestHelper helper, String modId, BlockPos origin, Layout layout, int plots,
+            BiConsumer<CommandSourceStack, GameTestSequence> steps) {
         var server = helper.getLevel().getServer();
         var pack = GalleryPack.id(modId);
         assertOfferedAndOff(helper, pack);
-        helper.assertTrue(!scenes.isEmpty() && scenes.size() <= MAX_SCENES,
-                "a gallery has 1 to " + MAX_SCENES + " scenes, not " + scenes.size());
+        helper.assertTrue(plots >= 1 && plots <= MAX_SCENES, "a gallery has 1 to " + MAX_SCENES + " plots, not " + plots);
         var at = helper.absolutePos(origin);
-        var strip = strip(at, scenes.size());
-        var source = operator(helper, at);
-        forceLoad(helper.getLevel(), strip);
+        var run = new Run(helper.getLevel(), modId, at, layout, plots, operator(helper, at));
+        forceLoad(helper.getLevel(), run.area());
         var on = select(server, pack, true);
-        helper.testInfo.addListener(new ClearAwayIfFailed(helper.getLevel(), strip, pack, on));
+        helper.testInfo.addListener(new ClearAwayIfFailed(run, on));
         var off = new AtomicReference<CompletableFuture<Void>>();
-        helper.startSequence()
+        var sequence = helper.startSequence()
                 .thenWaitUntil(() -> helper.assertTrue(on.isDone(), pack + " is not on yet"))
-                .thenWaitUntil(() -> helper.assertTrue(loaded(helper.getLevel(), strip), "the gallery's strip is not loaded yet"))
-                .thenExecute(() -> {
-                    assertLoads(helper, source, modId);
-                    for (var scene : scenes) {
-                        helper.assertTrue(server.getFunctions().get(GalleryPack.scene(modId, scene.name())).isPresent(),
-                                "there is no scene function " + GalleryPack.scene(modId, scene.name()));
-                    }
-                    assertRuns(helper, source, GalleryPack.build(modId));
-                    assertKeyBlocks(helper, at, scenes);
-                    clear(helper.getLevel(), strip);
-                    off.set(select(server, pack, false));
-                })
-                .thenWaitUntil(() -> helper.assertTrue(off.get() != null && off.get().isDone(), pack + " is not off yet"))
-                .thenSucceed();
+                .thenWaitUntil(() -> helper.assertTrue(loaded(helper.getLevel(), run.area()), "the gallery's plots are not loaded yet"));
+        steps.accept(run.source(), sequence);
+        return sequence
+                .thenExecute(() -> off.set(run.clearAway()))
+                .thenWaitUntil(() -> helper.assertTrue(off.get() != null && off.get().isDone(), pack + " is not off yet"));
     }
 
     /**
@@ -146,11 +206,16 @@ public final class GalleryCheck {
 
     /** Asserts each scene's key block stands in its plot, the scenes' plots running east from {@code origin}, absolute. */
     public static void assertKeyBlocks(GameTestHelper helper, BlockPos origin, List<Scene> scenes) {
+        assertKeyBlocks(helper, origin, Layout.ONE_ROW, scenes);
+    }
+
+    /** Asserts each scene's key block stands in its plot, the scenes' plots laid out by {@code layout} from {@code origin}, absolute. */
+    public static void assertKeyBlocks(GameTestHelper helper, BlockPos origin, Layout layout, List<Scene> scenes) {
         for (int i = 0; i < scenes.size(); i++) {
             var scene = scenes.get(i);
             helper.assertTrue(plot(BlockPos.ZERO).isInside(scene.key()),
                     "scene " + scene.name() + "'s key " + scene.key().toShortString() + " is outside its plot");
-            var pos = sceneOrigin(origin, i).offset(scene.key());
+            var pos = layout.sceneOrigin(origin, i).offset(scene.key());
             var found = helper.getLevel().getBlockState(pos);
             helper.assertTrue(found.is(scene.block()),
                     "scene " + scene.name() + "'s " + scene.block() + " is not at " + pos.toShortString() + ", where stands " + found);
@@ -177,7 +242,7 @@ public final class GalleryCheck {
 
     /** Where scene {@code index} of a gallery run from {@code origin} is run from: each a plot east of the last. */
     public static BlockPos sceneOrigin(BlockPos origin, int index) {
-        return origin.east(index * PLOT_WIDTH);
+        return Layout.ONE_ROW.sceneOrigin(origin, index);
     }
 
     /** The plot of a scene run from {@code at}, its floor included. */
@@ -188,7 +253,7 @@ public final class GalleryCheck {
 
     /** Every plot of a gallery of {@code scenes} run from {@code origin}, their floors included. */
     public static BoundingBox strip(BlockPos origin, int scenes) {
-        return BoundingBox.encapsulatingBoxes(List.of(plot(origin), plot(sceneOrigin(origin, scenes - 1)))).orElseThrow();
+        return Layout.ONE_ROW.area(origin, scenes);
     }
 
     /**
@@ -272,17 +337,45 @@ public final class GalleryCheck {
         return box.intersectingChunks().allMatch(chunk -> level.hasChunk(chunk.x(), chunk.z()));
     }
 
-    /** Air where the strip stood, its floor too, its entities gone. The runner releases the forced chunks once the batch ends. */
-    private static void clear(ServerLevel level, BoundingBox strip) {
-        StructureUtils.clearSpaceForStructure(strip, level);
+    /**
+     * A test's run of a gallery: its first {@code plots} plots, laid out by {@code layout} from
+     * {@code origin}, absolute, built by {@code source}, standing at {@code origin}.
+     */
+    private record Run(ServerLevel level, String modId, BlockPos origin, Layout layout, int plots, CommandSourceStack source) {
+
+        BoundingBox area() {
+            return layout.area(origin, plots);
+        }
+
+        /**
+         * The pack's own clear on each plot, then air where the plots stood, their floors too, their
+         * entities gone, and the pack off. The runner's clear sets blocks with no removal, which would
+         * leave a Module's records of what it placed for the next test's scene to find. The runner
+         * releases the forced chunks once the batch ends.
+         *
+         * @return the reload, done once the pack is off
+         */
+        CompletableFuture<Void> clearAway() {
+            var server = level.getServer();
+            var clear = GalleryPack.clear(modId);
+            if (server.getFunctions().get(clear).isPresent()) {
+                for (int plot = 0; plot < plots; plot++) {
+                    // Prefixed, so a failing command is logged, never thrown: clearing away fails no test.
+                    server.getCommands().performPrefixedCommand(
+                            source.withPosition(Vec3.atBottomCenterOf(layout.sceneOrigin(origin, plot))), "function " + clear);
+                }
+            }
+            StructureUtils.clearSpaceForStructure(area(), level);
+            return select(server, GalleryPack.id(modId), false);
+        }
     }
 
     /**
-     * A failed test skips its own last steps, which would leave the pack on under the batches after it
-     * (ADR 0010). It turns the pack off only once turning it on is done, since two reloads race.
+     * A failed test skips its own last steps, which would leave the plots standing and the pack on
+     * under the batches after it (ADR 0010). It clears away only once turning the pack on is done,
+     * since two reloads race.
      */
-    private record ClearAwayIfFailed(ServerLevel level, BoundingBox strip, String pack, CompletableFuture<Void> on)
-            implements GameTestListener {
+    private record ClearAwayIfFailed(Run run, CompletableFuture<Void> on) implements GameTestListener {
 
         @Override
         public void testStructureLoaded(GameTestInfo testInfo) {
@@ -294,9 +387,8 @@ public final class GalleryCheck {
 
         @Override
         public void testFailed(GameTestInfo testInfo, GameTestRunner runner) {
-            clear(level, strip);
-            var server = level.getServer();
-            on.whenComplete((done, failed) -> server.execute(() -> select(server, pack, false)));
+            var server = run.level().getServer();
+            on.whenComplete((done, failed) -> server.execute(run::clearAway));
         }
 
         @Override
