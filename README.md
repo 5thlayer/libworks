@@ -10,8 +10,8 @@ libworks is becoming a dependency (ADR-0128, #8). It carries `runtime/`, a small
 - A GameTest harness: `runGameTestServer` runs the Module's game tests headless and fails if it ran none. `buildGametestStructures` writes the stone platform they stand on.
 - JUnit tests on a plain JVM, with no Minecraft.
 - `sh ./gradlew release -PreleaseVersion=<version>`, which releases a version to `~/.m2` and tags it; a published version never changes. The `skillworks:quicklaunch` skill opens the dev client into the most recent save in `run/saves`, one client per checkout.
-- CI on every push, through libworks' `module-ci.yml` at the plugin's tag: the build, the JUnit tests, the game tests, and a REUSE lint. It never publishes.
-- MIT under REUSE, `CLAUDE.md`, a `GLOSSARY.md` stub, `docs/agents/`, conventional commits.
+- CI on every push, through libworks' `module-ci.yml` at the plugin's tag: the build, the JUnit tests, the game tests, a REUSE lint, and `scripts/build-textures.py --check` when the Module has that script. It never publishes.
+- MIT under REUSE, with a `NOTICE` for the credits of third-party material and a commented `REUSE.toml` stanza for its licence, `CLAUDE.md`, a `GLOSSARY.md` stub, `docs/agents/`, conventional commits.
 - The engineering skills from [mattpocock/skills](https://github.com/mattpocock/skills), a submodule at `vendor/mattpocock-skills` pinned to a release and linked into `.claude/skills/`.
 - ADR 0001, the versioning rule every Module inherits: below 1.0 an addition bumps the patch.
 
@@ -23,7 +23,7 @@ libworks is becoming a dependency (ADR-0128, #8). It carries `runtime/`, a small
 
 ## Adopting it in an existing Module
 
-A Module that predates the template is not regenerated. Diff it against the template and take the template's version of each shared piece: `settings.gradle` and `build.gradle` applying the plugin in place of its own build logic and `scripts/`, the game test harness (`CodeGameTest` and the `*GameTests` registrar), `REUSE.toml`, `docs/agents/`, `.github/workflows/`, and the skills submodule with its links. Its own versioning ADR becomes a pointer to libworks' ADR 0001.
+A Module that predates the template is not regenerated. Diff it against the template and take the template's version of each shared piece: `settings.gradle` and `build.gradle` applying the plugin in place of its own build logic and `scripts/`, the game test harness (`CodeGameTest` and the `*GameTests` registrar), `REUSE.toml` and `NOTICE`'s preamble, `docs/agents/`, `.github/workflows/`, and the skills submodule with its links. Its own versioning ADR becomes a pointer to libworks' ADR 0001.
 
 ## Changing the template
 
