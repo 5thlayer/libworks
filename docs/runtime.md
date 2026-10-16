@@ -30,7 +30,7 @@ dependencies {
 }
 ```
 
-A Module that uses `libworks.machine` needs 0.1.2 or later, one that calls `fluidTooltip` with a title 0.1.4 or later, one that uses `FluidContainers` 0.1.5 or later, one that uses `GhostScreen` 0.1.6 or later, one that overrides its `ghostAt` 0.1.7 or later, one that runs `WorksTabCheck` from libworks-gametest 0.1.8 or later, one with a Gallery pack 0.1.9 or later, one whose gallery test passes a `GalleryCheck.Layout` or calls `withPack` 0.1.10 or later, and one whose gallery has more than 12 scenes 0.1.11 or later, so its range starts there. The range is what makes two Modules nesting different patches load one copy: FML keeps the highest version in range. A breaking change bumps the minor, which leaves the range, as ADR 0001 sets for every version here.
+A Module that uses `libworks.machine` needs 0.1.2 or later, one that calls `fluidTooltip` with a title 0.1.4 or later, one that uses `FluidContainers` 0.1.5 or later, one that uses `GhostScreen` 0.1.6 or later, one that overrides its `ghostAt` 0.1.7 or later, one that runs `WorksTabCheck` from libworks-gametest 0.1.8 or later, one with a Gallery pack 0.1.9 or later, one whose gallery test passes a `GalleryCheck.Layout` or calls `withPack` 0.1.10 or later, one whose gallery has more than 12 scenes 0.1.11 or later, and one with more than 16 0.1.12 or later, so its range starts there. The range is what makes two Modules nesting different patches load one copy: FML keeps the highest version in range. A breaking change bumps the minor, which leaves the range, as ADR 0001 sets for every version here.
 
 A modpack pins the Module's jar, which carries the nested jar; nothing else is installed.
 
@@ -85,7 +85,7 @@ Every Module's gallery is laid out alike, so a player who has walked one knows t
 - Its sign stands at the plot's south front, `~13 ~ ~`, as `oak_sign[rotation=0]` with `is_waxed:1b`. Its lines are translation keys, `<modid>.gallery.<scene>` for the feature's name and `<modid>.gallery.<scene>.<n>` for what it shows, in the Module's lang file. A scene of a gesture shows its result, and its sign says how to make it.
 - A scene is built working, from the Module, vanilla and the Modules it requires: power, fuel, items and fluid in place. It changes blocks, their contents, and the Module's own records for what it places; never time, weather, game rules or players.
 - `<modid>:gallery/clear`, which a pack may leave out, clears one scene's plot from where the scene runs, removing what it placed as a player's world would: entities first, then the Module's blocks, so its records of them go too. The game tests run it on each plot before clearing the plots themselves, which sets blocks with no removal and would leave those records for the next test's scene to find.
-- A gallery has at most `GalleryCheck.MAX_SCENES` (16) scenes, which bounds the plots the check force-loads and clears, with room above the largest gallery. It is built beside the test's structure, so any structure serves.
+- A gallery has at most `GalleryCheck.MAX_SCENES` (24) scenes, which bounds the plots the check force-loads and clears, with room above the largest gallery. It is built beside the test's structure, so any structure serves.
 - A command fails only by throwing, as vanilla's do; one that reports a failure and returns 0 passes the check unseen.
 
 ### Checking it in a game test

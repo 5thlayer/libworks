@@ -65,7 +65,7 @@ public final class GalleryCheck {
      * The most scenes a gallery has, which bounds the plots the check force-loads and clears, with
      * room above the largest gallery. The gallery is built beside the test's structure, not in it.
      */
-    public static final int MAX_SCENES = 16;
+    public static final int MAX_SCENES = 24;
 
     /** Two reloads and the build, with room to spare. A Module gives its gallery test this many ticks. */
     public static final int TICKS = 1_200;
