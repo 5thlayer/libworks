@@ -8,6 +8,7 @@ path = [
     "**/*.gradle",
     "**/gradle.properties",
     ".gitignore",
+    ".gitattributes",
     ".claude/settings.json",
     ".gitmodules",
     "**/*.mods.toml",
