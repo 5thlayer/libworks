@@ -34,20 +34,18 @@ class ModulePlugin implements Plugin<Project> {
         // Where Consumers resolve the Modules from, and where the Module publishes (release-train).
         // Every io.github.5thlayer artifact resolves from ~/.m2 and no other repository, and ~/.m2 serves
         // nothing else (libworks#18). By group, so an upstream's own upstreams and dev-only Modules pass too.
-        def local = project.repositories.mavenLocal()
-        project.repositories.remove(local)
-        def mavenLocal = new File(local.url.path)
         def m2 = null
         project.repositories.exclusiveContent {
             it.forRepository { m2 = project.repositories.mavenLocal { it.name = 'libworksM2' } }
             it.filter { it.includeGroup 'io.github.5thlayer' }
         }
+        def mavenLocal = new File(m2.url.path)
         // A Module's own exclusive ~/.m2 shuts this one out and is shut out by it, so Gradle finds the
-        // Modules nowhere and says only that; this names the block to delete, in either form.
+        // Modules nowhere and says only that; a filtered one is refused too, so there is one form.
         project.afterEvaluate {
-            def own = project.repositories.withType(MavenArtifactRepository).findAll { it != m2 && it.url == local.url }
-            if (own) throw new GradleException(
-                    "${property('mod_id')} declares its own ~/.m2 repository (${own*.name.join(', ')}), which the plugin declares itself (libworks#18): delete its mavenLocal block from repositories")
+            def modId = property('mod_id')
+            if (project.repositories.withType(MavenArtifactRepository).any { it != m2 && it.url == m2.url }) throw new GradleException(
+                    "$modId declares its own ~/.m2 repository, which the plugin declares itself (libworks#18): delete its `mavenLocal { … }` or `exclusiveContent { forRepository { mavenLocal() } … }` block from repositories")
         }
 
         // Optional upstreams: on the dev runs' classpath, never in the published jar, pom or module metadata.

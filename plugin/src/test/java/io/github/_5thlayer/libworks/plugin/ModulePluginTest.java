@@ -261,7 +261,9 @@ class ModulePluginTest {
                     doLast {
                         %s.each { c ->
                             def files = configurations.detachedConfiguration(dependencies.create(c)).incoming.artifactView { lenient = true }.files.files
-                            println "$c ${files ? files.first().path.contains('/m2/') ? 'm2' : 'other' : 'none'}"
+                            def from = 'none'
+                            if (files) from = files.first().path.contains('/m2/') ? 'm2' : 'other'
+                            println "$c $from"
                         }
                     }
                 }
@@ -280,16 +282,21 @@ class ModulePluginTest {
                 "org.example:local-only:1.0", "org.example:elsewhere:1.0"));
     }
 
+    private void refusesAModulesOwnMavenLocal(String block) throws IOException {
+        buildScript("");
+        appendBuildScript("repositories { " + block + " }\n");
+        String out = fail("help").getOutput();
+        assertTrue(out.contains("beltworks declares its own ~/.m2 repository, which the plugin declares itself (libworks#18)"), out);
+    }
+
     @Test
-    void refusesAModulesOwnMavenLocalInEitherForm() throws IOException {
-        for (String own : List.of(
-                "mavenLocal { content { includeModule 'io.github.5thlayer', 'groundworks' } }",
-                "exclusiveContent { forRepository { mavenLocal() }; filter { includeModule 'io.github.5thlayer', 'groundworks' } }")) {
-            buildScript("");
-            appendBuildScript("repositories { " + own + " }\n");
-            String out = fail("help").getOutput();
-            assertTrue(out.contains("beltworks declares its own ~/.m2 repository (MavenLocal), which the plugin declares itself (libworks#18)"), out);
-        }
+    void refusesAModulesOwnFilteredMavenLocal() throws IOException {
+        refusesAModulesOwnMavenLocal("mavenLocal { content { includeModule 'io.github.5thlayer', 'groundworks' } }");
+    }
+
+    @Test
+    void refusesAModulesOwnExclusiveMavenLocal() throws IOException {
+        refusesAModulesOwnMavenLocal("exclusiveContent { forRepository { mavenLocal() }; filter { includeModule 'io.github.5thlayer', 'groundworks' } }");
     }
 
     @Test
