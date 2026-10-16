@@ -39,13 +39,15 @@ class ModulePlugin implements Plugin<Project> {
         // Optional upstreams: on the dev runs' classpath, never in the published jar, pom or module metadata.
         def localRuntime = project.configurations.maybeCreate('localRuntime')
         project.configurations.named('runtimeClasspath') { it.extendsFrom localRuntime }
-        // libworks-gametest (libworks ADR 0008): compiled against and on the dev runs, never published. A run
-        // on a source set of its own, without localRuntime, extends it too.
+        // libworks-gametest (libworks ADR 0008): compiled against by the gametest source set alone, so main
+        // never names it (ADR 0011), and on the dev runs, never published. A run on a source set of its own,
+        // without localRuntime, extends it too.
         def gametest = project.configurations.create('libworksGametest') {
             it.canBeConsumed = false
             it.canBeResolved = false
         }
-        project.configurations.named('compileOnly') { it.extendsFrom gametest }
+        def gametestSources = project.sourceSets.maybeCreate('gametest')
+        project.configurations.named(gametestSources.compileOnlyConfigurationName) { it.extendsFrom gametest }
         localRuntime.extendsFrom gametest
         def libworks = project.extensions.create('libworks', LibworksExtension, project)
 
@@ -68,7 +70,8 @@ class ModulePlugin implements Plugin<Project> {
     private static void configureNeoForge(Project project, Closure<String> property) {
         def gameTestReport = project.layout.buildDirectory.file('reports/gametest.xml').get().asFile
         def modId = property('mod_id')
-        // What only the Module's own runs load, and the jar leaves out: its dev and game-test packs (ADR 0004).
+        // What only the Module's own runs load, and the jar leaves out: its dev and game-test packs (ADR 0004),
+        // and its game-test code and test-only resources (ADR 0011).
         // Its code builds on the Module's own and the Module's dependencies.
         def gametest = project.sourceSets.maybeCreate('gametest')
         project.configurations.named(gametest.implementationConfigurationName) { it.extendsFrom project.configurations.implementation }

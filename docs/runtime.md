@@ -66,7 +66,7 @@ static void register(MyGameTests.Registrar tests) {
 }
 ```
 
-`inOrder` fails unless the Works tab shows exactly the listed item paths of that namespace, in that order, and fails on an empty list; `noOtherTab` fails if any tab but the Works tab and the search tab shows one, or if the Works tab shows none. The jar is a `GAMELIBRARY`, never nested. The convention plugin, from 0.3.0, adds it at the runtime's range, `compileOnly` and `localRuntime`, to a Module whose `runtime` is 0.1.8 or later (`docs/plugin.md`); the Module only lets its `~/.m2` repository serve it. `compileOnly` reaches `src/main`, so only game-test code may name it: anything else would fail in a player's game.
+`inOrder` fails unless the Works tab shows exactly the listed item paths of that namespace, in that order, and fails on an empty list; `noOtherTab` fails if any tab but the Works tab and the search tab shows one, or if the Works tab shows none. The jar is a `GAMELIBRARY`, never nested. The convention plugin, from 0.3.0, adds it at the runtime's range, compile-only and `localRuntime`, to a Module whose `runtime` is 0.1.8 or later (`docs/plugin.md`); the Module only lets its `~/.m2` repository serve it. From plugin 0.4.0 only the `gametest` source set compiles against it, so `src/main` cannot name it, and a Module's game tests never ship in its jar (ADR 0011).
 
 ```groovy
 mavenLocal {
@@ -76,8 +76,6 @@ mavenLocal {
     }
 }
 ```
-
-While a Module's game tests ship in its jar (#17), a player's game loads the test class without `libworks-gametest`; it only fails if the test runs, which the Module's `*.gametest` switch keeps from happening.
 
 ## Gallery packs
 

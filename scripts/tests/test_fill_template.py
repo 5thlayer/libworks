@@ -143,15 +143,19 @@ class FillTemplate(unittest.TestCase):
         self.assertIn("includeModule 'io.github.5thlayer', 'libworks-gametest'", build)
 
     def test_the_works_tab_and_its_game_test_move_to_the_module_s_id(self):
-        package = self.repo / "src/main/java/io/github/_5thlayer/craftworks"
-        self.assertIn("WorksTab.KEY", (package / "WorksTabContents.java").read_text())
-        self.assertIn("Craftworks.MOD_ID", (package / "gametest/CreativeTabTests.java").read_text())
+        package = "io/github/_5thlayer/craftworks"
+        self.assertIn("WorksTab.KEY", self.text(f"src/main/java/{package}/WorksTabContents.java"))
+        self.assertIn("Craftworks.MOD_ID", self.text(f"src/gametest/java/{package}/gametest/CreativeTabTests.java"))
         self.assertIn('modId = "libworks"', self.text("src/main/resources/META-INF/neoforge.mods.toml"))
 
     def test_the_gametest_code_and_pack_move_to_the_module_s_id(self):
         dev_packs = self.repo / "src/gametest/java/io/github/_5thlayer/craftworks/gametest/DevPacks.java"
         self.assertIn("Craftworks.MOD_ID", dev_packs.read_text())
         self.assertTrue((self.repo / "src/gametest/resources/gametest_pack/data/craftworks/tags/item/gametest_pack.json").is_file())
+        # Game-test code never ships (libworks ADR 0011): the registrar and the platform move with the pack.
+        self.assertTrue((self.repo / "src/gametest/java/io/github/_5thlayer/craftworks/gametest/CraftworksGameTests.java").is_file())
+        self.assertTrue((self.repo / "src/gametest/resources/data/craftworks/structure/gametest/platform.nbt").is_file())
+        self.assertFalse((self.repo / "src/main/java/io/github/_5thlayer/craftworks/gametest").exists())
         self.assertFalse(any("examplelib" in str(p) for p in (self.repo / "src").rglob("*")))
 
     def test_the_tree_is_left_staged_with_nothing_untracked(self):

@@ -17,6 +17,9 @@ import net.minecraft.gametest.framework.TestEnvironmentDefinition;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.Rotation;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.event.lifecycle.FMLConstructModEvent;
 import net.neoforged.neoforge.event.RegisterGameTestsEvent;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
@@ -24,8 +27,11 @@ import net.neoforged.neoforge.registries.DeferredRegister;
  * The Module's game tests, run by the {@code gameTestServer} Gradle run: the Minecraft-integration
  * seam, with a real player on a real server. Each test stands on the {@code gametest/platform}
  * structure, a stone floor that {@code scripts/build-gametest-structures.py} writes, and sets up
- * what it needs itself, so the setup is in the diff.
+ * what it needs itself, so the setup is in the diff. It lives in the {@code gametest} source set, which
+ * only the Module's own runs load, and hooks itself in, so the {@code @Mod} class names no game-test
+ * code and nothing gates it (libworks ADR 0011).
  */
+@EventBusSubscriber(modid = ExampleLib.MOD_ID)
 public final class ExampleLibGameTests {
 
     private static final Identifier PLATFORM = id("gametest/platform");
@@ -40,9 +46,14 @@ public final class ExampleLibGameTests {
     private ExampleLibGameTests() {
     }
 
+    @SubscribeEvent
+    static void construct(FMLConstructModEvent event) {
+        register(event.getContainer().getEventBus());
+    }
+
     public static void register(IEventBus modBus) {
         TEST_TYPES.register(modBus);
-        // Posted only when game tests are enabled, so a production server never registers the tests.
+        // Posted only when game tests are enabled, which a production game never is.
         modBus.addListener(ExampleLibGameTests::registerTests);
     }
 

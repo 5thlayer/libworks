@@ -3,13 +3,12 @@
 
 package io.github._5thlayer.examplelib;
 
-import io.github._5thlayer.examplelib.gametest.ExampleLibGameTests;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 
 /**
- * The Module's entry point. It fills its part of the suite's Works tab and registers the game tests,
- * which exist only when game tests are enabled.
+ * The Module's entry point. It fills its part of the suite's Works tab. The game tests hook
+ * themselves in from the {@code gametest} source set, which never ships (libworks ADR 0011).
  */
 @Mod(ExampleLib.MOD_ID)
 public final class ExampleLib {
@@ -19,6 +18,5 @@ public final class ExampleLib {
 
     public ExampleLib(IEventBus modBus) {
         modBus.addListener(WorksTabContents::add);
-        ExampleLibGameTests.register(modBus);
     }
 }

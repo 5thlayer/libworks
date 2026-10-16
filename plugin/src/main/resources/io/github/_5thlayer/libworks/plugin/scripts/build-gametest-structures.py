@@ -29,7 +29,8 @@ def _mod_id():
     raise SystemExit("gradle.properties names no mod_id")
 
 
-STRUCTURES = os.path.join(ROOT, "src", "main", "resources", "data", _mod_id(), "structure", "gametest")
+# In the gametest source set, which never ships (libworks ADR 0011).
+STRUCTURES = os.path.join(ROOT, "src", "gametest", "resources", "data", _mod_id(), "structure", "gametest")
 
 DATA_VERSION = 4790  # 26.1.2
 # Room for a block and what stands round it: a door or a bed, and the blocks either side.
