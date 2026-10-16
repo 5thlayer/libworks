@@ -8,6 +8,12 @@
             "command": "git fetch -q origin main 2>/dev/null; set -- $(git rev-list --left-right --count main...origin/main 2>/dev/null); [ \"${1:-0}\" != 0 ] || [ \"${2:-0}\" != 0 ] && echo \"Local main is $1 commit(s) ahead of and $2 behind origin/main: bring it up to date before building on it.\"; true",
             "timeout": 30,
             "statusMessage": "Checking main against origin"
+          },
+          {
+            "type": "command",
+            "command": "if git submodule status 2>/dev/null | grep -q '^-'; then git submodule update --init --recursive -q && echo \"Initialized the git submodules: the vendored skills in .claude/skills now resolve.\"; fi; true",
+            "timeout": 120,
+            "statusMessage": "Initializing git submodules"
           }
         ]
       }
