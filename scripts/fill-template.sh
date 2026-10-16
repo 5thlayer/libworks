@@ -68,9 +68,9 @@ git mv "src/main/java/$package/examplelib" "src/main/java/$package/$id"
 git mv "src/test/java/$package/examplelib" "src/test/java/$package/$id"
 git mv "src/gametest/java/$package/examplelib" "src/gametest/java/$package/$id"
 git mv "src/gametest/resources/gametest_pack/data/examplelib" "src/gametest/resources/gametest_pack/data/$id"
-git mv "src/main/resources/data/examplelib" "src/main/resources/data/$id"
+git mv "src/gametest/resources/data/examplelib" "src/gametest/resources/data/$id"
 git mv "src/main/java/$package/$id/ExampleLib.java" "src/main/java/$package/$id/$class.java"
-git mv "src/main/java/$package/$id/gametest/ExampleLibGameTests.java" "src/main/java/$package/$id/gametest/${class}GameTests.java"
+git mv "src/gametest/java/$package/$id/gametest/ExampleLibGameTests.java" "src/gametest/java/$package/$id/gametest/${class}GameTests.java"
 
 # Every tracked text file that names a placeholder, but not this script, which is deleted below.
 escape() { printf '%s' "$1" | sed -e 's/[\/&|]/\\&/g'; }

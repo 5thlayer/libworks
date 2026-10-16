@@ -13,6 +13,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.jar.JarEntry;
+import java.util.jar.JarOutputStream;
+import javax.tools.ToolProvider;
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,7 +64,7 @@ class ModulePluginTest {
                     doLast { println configurations.runtimeClasspath.extendsFrom*.name.contains('localRuntime') }
                 }
                 tasks.register('gametestReaches') {
-                    doLast { println(['compileOnly', 'localRuntime'].collect { configurations[it].extendsFrom*.name.contains('libworksGametest') }.join(' ')) }
+                    doLast { println(['compileOnly', 'gametestCompileOnly', 'localRuntime'].collect { configurations[it].extendsFrom*.name.contains('libworksGametest') }.join(' ')) }
                 }
                 tasks.register('declared') {
                     doLast {
@@ -183,6 +186,34 @@ class ModulePluginTest {
                 """);
         build("compileGametestJava");
         assertTrue(Files.isRegularFile(module.resolve("build/classes/java/gametest/belt/DevPacks.class")));
+    }
+
+    /** A stand-in libworks-gametest: a jar holding {@code testkit.Check}, on {@code libworksGametest}. */
+    private void gametestJar() throws IOException {
+        Path source = Files.createDirectories(elsewhere.resolve("testkit")).resolve("Check.java");
+        Files.writeString(source, "package testkit; public final class Check { public static void run() {} }\n");
+        Path classes = Files.createDirectories(elsewhere.resolve("classes"));
+        assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null, "-d", classes.toString(), source.toString()));
+        Path jar = elsewhere.resolve("libworks-gametest.jar");
+        try (var out = new JarOutputStream(Files.newOutputStream(jar))) {
+            out.putNextEntry(new JarEntry("testkit/Check.class"));
+            out.write(Files.readAllBytes(classes.resolve("testkit/Check.class")));
+            out.closeEntry();
+        }
+        appendBuildScript("dependencies { libworksGametest files('%s') }\n".formatted(jar.toString().replace("\\", "/")));
+    }
+
+    @Test
+    void compilesOnlyTheGametestSourceSetAgainstLibworksGametest() throws IOException {
+        buildScript("");
+        gametestJar();
+        write("src/gametest/java/belt/Tests.java", "package belt; final class Tests { static void run() { testkit.Check.run(); } }\n");
+        build("compileGametestJava");
+        assertTrue(Files.isRegularFile(module.resolve("build/classes/java/gametest/belt/Tests.class")));
+        // Game-test code never ships (ADR 0011): main that names it does not compile.
+        write("src/main/java/belt/Belt.java", "package belt; public final class Belt { static void run() { testkit.Check.run(); } }\n");
+        String out = fail("compileJava").getOutput();
+        assertTrue(out.contains("package testkit does not exist"), out);
     }
 
     @Test
@@ -351,7 +382,7 @@ class ModulePluginTest {
         String out = build("-q", "declared").getOutput();
         assertTrue(out.contains("libworksGametest io.github.5thlayer:libworks-gametest strictly=[0.1.8,0.2) prefer=0.1.8"), out);
         assertFalse(out.contains("jarJar io.github.5thlayer:libworks-gametest"), out);
-        assertEquals("true true\n", build("-q", "gametestReaches").getOutput());
+        assertEquals("false true true\n", build("-q", "gametestReaches").getOutput());
     }
 
     @Test
@@ -482,18 +513,20 @@ class ModulePluginTest {
     }
 
     @Test
-    void writesTheGametestPlatformIntoTheModulesNamespace() throws IOException {
+    void writesTheGametestPlatformIntoTheGametestSourceSet() throws IOException {
         buildScript("");
         build("buildGametestStructures");
-        Path platform = module.resolve("src/main/resources/data/beltworks/structure/gametest/platform.nbt");
+        Path platform = module.resolve("src/gametest/resources/data/beltworks/structure/gametest/platform.nbt");
         assertTrue(Files.size(platform) > 0, platform.toString());
+        // In the gametest source set, which never ships (ADR 0011).
+        assertFalse(Files.exists(module.resolve("src/main/resources")));
     }
 
     @Test
     void leavesAnIdenticalGametestPlatformAndRefusesToOverwriteAModulesOwn() throws IOException {
         buildScript("");
         build("buildGametestStructures");
-        Path platform = module.resolve("src/main/resources/data/beltworks/structure/gametest/platform.nbt");
+        Path platform = module.resolve("src/gametest/resources/data/beltworks/structure/gametest/platform.nbt");
         byte[] generated = Files.readAllBytes(platform);
         build("buildGametestStructures");
         assertArrayEquals(generated, Files.readAllBytes(platform));
