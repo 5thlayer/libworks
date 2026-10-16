@@ -18,6 +18,8 @@
 #   CurseForge  $CURSEFORGE_TOKEN (an upload API token), curseforge_project_id
 #               ($CURSEFORGE_PROJECT_ID), curseforge_dependencies
 # Only a site with a project is uploaded to; with none, the script refuses before contacting either.
+# Each upload is recorded beside the jar, in <archives_name>-<version>.uploads.json, and a recorded site
+# is refused before it is contacted: CurseForge's listing doesn't show a file still in review.
 # upload_release_type in gradle.properties sends every version as release, beta or alpha; left empty,
 # a version below 1.0 is a beta and one from 1.0 a release.
 # $MAVEN_REPO_LOCAL reads somewhere other than ~/.m2/repository, and $MODRINTH_API_URL,
@@ -35,6 +37,7 @@ import urllib.parse
 import urllib.request
 import uuid
 import zipfile
+from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path.cwd()
@@ -53,6 +56,10 @@ class Refused(Exception):
 
 class Published(Refused):
     """The site already has the version, so there is nothing to retry."""
+
+
+class Unrecorded(Published):
+    """The site took the upload, but its record couldn't be written; retrying would upload it again."""
 
 
 def fail(message):
@@ -181,6 +188,29 @@ class Release:
         if missing:
             fail(f"{self.jar.name} lacks its licensing: {', '.join(missing)}")
         self.notes = changelog(version)
+        self.record = self.jar.with_name(f"{artifact}-{version}.uploads.json")
+
+    def recorded(self, site):
+        """The record's entry for the site, refused unless this is a dry run, which only shows it."""
+        entry = json.loads(self.record.read_text()).get(site) if self.record.is_file() else None
+        name = SITES[site][0]
+        if self.dry_run:
+            print(f"recorded: {site} {entry['id']} at {entry['uploadedAt']}" if entry else f"no record: {site} in {self.record}")
+        elif entry:
+            raise Published(f"this machine already uploaded {self.version} to {name} as {entry['id']} on "
+                            f"{entry['uploadedAt']}, as {self.record} records, and a published version never "
+                            f"changes. Remove its \"{site}\" entry only if {name} rejected that file or never showed it.")
+
+    def uploaded(self, site, file_id):
+        """Records the site's upload beside the jar, keeping the other site's entry."""
+        print(f"Uploaded {self.jar.name} to {SITES[site][0]} as {self.version} ({file_id})")
+        try:
+            entries = json.loads(self.record.read_text()) if self.record.is_file() else {}
+            entries[site] = {"id": file_id, "uploadedAt": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")}
+            self.record.write_text(json.dumps(entries, indent=2) + "\n")
+        except OSError as error:
+            raise Unrecorded(f"uploaded as {file_id}, but {self.record} couldn't record it ({error.strerror}); "
+                             f"add its \"{site}\" entry by hand, so the upload is never repeated.") from None
 
     def file_part(self):
         return "file", self.jar.name, "application/java-archive", self.data
@@ -208,6 +238,7 @@ class Release:
         }
         headers = {"Authorization": secret, "User-Agent": self.agent}
         listing = f"{api}/project/{project}/version"
+        self.recorded("modrinth")
         if self.dry_run:
             show("GET", listing, headers)
             show("POST", f"{api}/version", headers, data=json.dumps(metadata, indent=2), file=self.described())
@@ -218,7 +249,7 @@ class Release:
         content_type, body = multipart([("data", None, "application/json", json.dumps(metadata).encode()),
                                         self.file_part()])
         created = send("POST", f"{api}/version", {**headers, "Content-Type": content_type}, body)
-        print(f"Uploaded {self.jar.name} to Modrinth as {self.version} ({created.get('id')})")
+        self.uploaded("modrinth", created.get("id"))
 
     def curseforge(self):
         secret = token("CURSEFORGE_TOKEN")
@@ -237,6 +268,7 @@ class Release:
         required = dependencies("curseforge", self.props)
         if required:
             metadata["relations"] = {"projects": [{"slug": d, "type": "requiredDependency"} for d in required]}
+        self.recorded("curseforge")
         if self.dry_run:
             show("GET", files, api_headers)
             show("GET", f"{upload}/api/game/version-types", upload_headers)
@@ -246,7 +278,8 @@ class Release:
                  metadata=json.dumps({**metadata, "gameVersions": f"<ids of {self.minecraft}, NeoForge, Client, Server>"}, indent=2),
                  file=self.described())
             return
-        # A published version is final on CurseForge too: it is never replaced.
+        # A published version is final on CurseForge too: it is never replaced. The listing doesn't show
+        # a file still in review, which the record covers on this machine.
         if {self.jar.name, self.name} & self.curseforge_files(files, api_headers):
             raise Published(f"CurseForge already has {self.version} in {project}, "
                           "and a published version never changes.")
@@ -255,7 +288,7 @@ class Release:
                                         self.file_part()])
         created = send("POST", f"{upload}/api/projects/{project}/upload-file",
                        {**upload_headers, "Content-Type": content_type}, body)
-        print(f"Uploaded {self.jar.name} to CurseForge as {self.version} ({created.get('id')})")
+        self.uploaded("curseforge", created.get("id"))
 
     def curseforge_files(self, url, headers):
         """The file and display names of every file the project has, across the listing's pages."""

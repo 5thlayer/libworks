@@ -41,13 +41,15 @@ class Request:
 
 class StandIn:
     """`modrinth[project]` and `curseforge[project]` hold the versions and file names each site has.
-    A site whose name is in `broken` answers every request with a 500."""
+    A site whose name is in `broken` answers every request with a 500. While `in_review` is set, a file
+    uploaded to CurseForge waits in its review, which the website's listing doesn't show."""
 
     def __init__(self):
         self.requests = []
         self.modrinth = {}
         self.curseforge = {}
         self.broken = set()
+        self.in_review = False
         stand_in = self
 
         class Handler(BaseHTTPRequestHandler):
@@ -101,7 +103,9 @@ class StandIn:
             return 200, {"data": page, "pagination": {"index": index, "pageSize": 2, "totalCount": len(files)}}
 
         def cf_upload(request, project):
-            stand_in.curseforge.setdefault(project, []).append(request.parts()["file"][1])
+            listed = stand_in.curseforge.setdefault(project, [])
+            if not stand_in.in_review:
+                listed.append(request.parts()["file"][1])
             return 200, {"id": 4242}
 
         routes = [

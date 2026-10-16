@@ -108,6 +108,15 @@ class Upload(unittest.TestCase):
         self.assertEqual(len(posts), 1)
         return posts[0]
 
+    def forget(self):
+        """Removes every upload record, for a test that uploads the same version again."""
+        for record in self.maven.rglob("*.uploads.json"):
+            record.unlink()
+
+    def record(self, version="0.3.9"):
+        path = self.maven / "io/github/5thlayer/examplelib" / version / f"examplelib-{version}.uploads.json"
+        return json.loads(path.read_text()) if path.is_file() else None
+
     def assertRefusedBeforeAnyRequest(self, result, message):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn(message, result.stderr)
@@ -247,6 +256,7 @@ exec "$@"
                     self.site.requests.clear()
                     self.site.modrinth.clear()
                     self.site.curseforge.clear()
+                    self.forget()
                     result = self.upload("0.3.9", **{name: unset})
                     self.assertNotEqual(result.returncode, 0)
                     self.assertIn(name, result.stderr)
@@ -295,6 +305,74 @@ exec "$@"
                      "examplelib-0.3.9.jar", '"version_type": "beta"', '"releaseType": "beta"']:
             self.assertIn(line, result.stdout)
 
+    def test_each_upload_is_recorded_beside_the_jar(self):
+        self.publish("0.3.9")
+        self.assertEqual(self.upload("0.3.9").returncode, 0)
+        record = self.record()
+        self.assertEqual(sorted(record), ["curseforge", "modrinth"])
+        self.assertEqual(record["modrinth"]["id"], "standin")
+        self.assertEqual(record["curseforge"]["id"], 4242)
+        for entry in record.values():
+            self.assertRegex(entry["uploadedAt"], r"^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$")
+
+    def test_a_retry_of_one_site_keeps_the_other_sites_record(self):
+        self.publish("0.3.9")
+        self.site.broken = {"modrinth"}
+        self.upload("0.3.9")
+        self.assertEqual(sorted(self.record()), ["curseforge"])
+        self.site.broken = set()
+        self.assertEqual(self.upload("--site", "modrinth", "0.3.9").returncode, 0, self.record())
+        self.assertEqual(sorted(self.record()), ["curseforge", "modrinth"])
+
+    def test_a_recorded_site_is_refused_without_contacting_it_and_leaves_the_other(self):
+        self.publish("0.3.9")
+        self.assertEqual(self.upload("--site", "modrinth", "0.3.9").returncode, 0)
+        self.site.modrinth.clear()  # as if Modrinth's listing didn't show it either
+        self.site.requests.clear()
+        result = self.upload("0.3.9")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("already uploaded 0.3.9 to Modrinth", result.stderr)
+        self.assertIn("examplelib-0.3.9.uploads.json", result.stderr)
+        self.assertNotIn("retry", result.stderr)
+        self.assertEqual({r.path.split("/")[1] for r in self.site.requests}, {"cf-site", "cf-upload"})
+        self.curseforge_post()
+
+    def test_removing_a_sites_entry_lets_it_upload_again(self):
+        self.publish("0.3.9")
+        self.site.in_review = True
+        self.upload("0.3.9")
+        path = self.maven / "io/github/5thlayer/examplelib/0.3.9/examplelib-0.3.9.uploads.json"
+        record = self.record()
+        del record["curseforge"]
+        path.write_text(json.dumps(record))
+        self.assertEqual(self.upload("--site", "curseforge", "0.3.9").returncode, 0)
+        self.assertEqual(len(self.site.sent("POST", "/cf-upload/")), 2)
+
+    def test_a_record_that_cannot_be_written_fails_without_a_retry(self):
+        folder = self.maven / "io/github/5thlayer/examplelib/0.3.9"
+        self.publish("0.3.9")
+        folder.chmod(0o555)
+        self.addCleanup(folder.chmod, 0o755)
+        result = self.upload("--site", "curseforge", "0.3.9")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("4242", result.stdout + result.stderr)
+        self.assertIn("examplelib-0.3.9.uploads.json", result.stderr)
+        self.assertNotIn("retry", result.stderr)
+        self.curseforge_post()
+
+    def test_a_dry_run_shows_the_record_and_writes_none(self):
+        self.publish("0.3.9")
+        result = self.upload("--dry-run", "0.3.9")
+        self.assertEqual(result.stdout.count("no record"), 2)
+        self.assertIsNone(self.record())
+        self.upload("--site", "curseforge", "0.3.9")
+        self.site.requests.clear()
+        result = self.upload("--dry-run", "0.3.9")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("recorded: curseforge 4242 at ", result.stdout)
+        self.assertIn("no record", result.stdout)
+        self.assertEqual(self.site.requests, [])
+
     # Modrinth
 
     def test_modrinth_authenticates_with_the_token(self):
@@ -340,6 +418,7 @@ exec "$@"
                     self.site.requests.clear()
                     self.site.modrinth.clear()
                     self.site.curseforge.clear()
+                    self.forget()
                     self.properties(upload_release_type=kind)
                     self.assertEqual(self.upload(version).returncode, 0)
                     self.assertEqual(json.loads(self.modrinth_post().parts()["data"][0])["version_type"], kind)
@@ -405,6 +484,17 @@ exec "$@"
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("CurseForge already has 0.3.9", result.stderr)
         self.assertEqual(self.site.sent("POST", "/cf-upload/"), [])
+
+    def test_a_retry_refuses_a_version_whose_file_curseforge_still_reviews(self):
+        self.publish("0.3.9")
+        self.site.in_review = True
+        self.assertEqual(self.upload("--site", "curseforge", "0.3.9").returncode, 0)
+        result = self.upload("--site", "curseforge", "0.3.9")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("already uploaded 0.3.9 to CurseForge", result.stderr)
+        self.assertIn("4242", result.stderr)
+        self.assertNotIn("retry", result.stderr)
+        self.assertEqual(len(self.site.sent("POST", "/cf-upload/")), 1)
 
     def test_refuses_a_version_curseforge_has_under_another_file_name(self):
         self.publish("0.3.9")
