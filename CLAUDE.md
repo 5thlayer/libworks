@@ -27,6 +27,7 @@ Conventional commits: `<type>(<optional scope>): <summary>`, with the summary in
 - `sh ./gradlew build` runs the JUnit tests, on a plain JVM with no Minecraft.
 - `sh ./gradlew runGameTestServer` runs the game tests headless, a real player on a real server, and names each one it ran; it fails if it ran none.
 - The `skillworks:gametest-loop` skill runs a subset, `--tests 'examplelib:<glob>' 1`, one glob a run, so a ticket's new game tests share a name prefix that selects them all.
+- The libworks plugin's `checkPlaysAlone`, which `build` runs, fails on another Module's id, namespace or required dependency in the Module's code or resources (libworks ADR 0005).
 - CI (`.github/workflows/ci.yml`) runs both through libworks' `module-ci.yml` on every push and never publishes.
 
 ### Game-test code
