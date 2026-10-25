@@ -1,14 +1,14 @@
 #!/bin/sh
 # Links into .claude/skills each engineering and productivity skill the mattpocock/skills submodule has and the
-# checkout lacks, so a submodule bump brings its new skills with it. diagnosing-bugs stays unlinked: a project skill
-# of that name would hide skillworks' one.
+# checkout lacks, so a submodule bump brings its new skills with it. diagnosing-bugs and implement stay unlinked: a
+# project skill of either name would hide skillworks' one.
 cd "${CLAUDE_PROJECT_DIR:-.}" || exit 0
 vendor=vendor/mattpocock-skills/skills
 linked=
 for skill in "$vendor"/engineering/*/ "$vendor"/productivity/*/; do
     [ -f "${skill}SKILL.md" ] || continue
     name=$(basename "$skill")
-    [ "$name" = diagnosing-bugs ] && continue
+    case "$name" in diagnosing-bugs|implement) continue ;; esac
     [ -e ".claude/skills/$name" ] || [ -L ".claude/skills/$name" ] && continue
     ln -s "../../${skill%/}" ".claude/skills/$name" && linked="$linked $name"
 done
