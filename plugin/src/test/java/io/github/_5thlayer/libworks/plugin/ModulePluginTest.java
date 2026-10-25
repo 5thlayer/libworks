@@ -450,6 +450,16 @@ class ModulePluginTest {
     }
 
     @Test
+    void checkPlaysAloneChecksAPillarAgainstTheOtherPillars() throws IOException {
+        Files.writeString(module.resolve("gradle.properties"), Files.readString(module.resolve("gradle.properties")).replace("mod_id = beltworks", "mod_id = atouchofdarkness"));
+        buildScript("");
+        write("src/main/java/dark/Dark.java", "package dark; class Dark { String sanity = \"atouchofmadness:sanity\"; String meter = \"atouchof:meter\"; String pipe = \"pipeworks:pipe\"; }\n");
+        String out = fail("checkPlaysAlone").getOutput();
+        assertTrue(out.contains("atouchofdarkness ships what names another Pillar (A Touch Of ADR-0002, libworks ADR 0013), whose namespaces are atouchofcold, atouchofmadness:\n"
+                + "  src/main/java/dark/Dark.java names atouchofmadness:sanity\n"), out);
+    }
+
+    @Test
     void checkPlaysAlonePassesAModuleWithNoResources() throws IOException {
         buildScript("");
         write("src/main/java/belt/Belt.java", "package belt; class Belt { }\n");
