@@ -2,7 +2,7 @@
 # Links into .claude/skills each engineering and productivity skill the mattpocock/skills submodule has and the
 # checkout lacks, so a submodule bump brings its new skills with it. diagnosing-bugs and implement stay unlinked: a
 # project skill of either name would hide skillworks' one.
-cd "${CLAUDE_PROJECT_DIR:-.}" || exit 0
+# Runs in the checkout the hook cd-ed into: the session's own, a worktree included.
 vendor=vendor/mattpocock-skills/skills
 linked=
 for skill in "$vendor"/engineering/*/ "$vendor"/productivity/*/; do
