@@ -10,6 +10,7 @@ path = [
     ".gitignore",
     ".gitattributes",
     ".claude/settings.json",
+    ".claude/hooks/*.sh",
     ".gitmodules",
     "**/*.mods.toml",
     "scripts/*.py",
