@@ -4,6 +4,7 @@ Written for Consumers: what a mod building against Example Module can use, or wi
 
 ## Unreleased
 
+- `libworks-plugin` 0.4.4: `checkPlaysAlone` also checks a Module against every other suite's Modules, bases included (ADR 0013): a Pillar may not name a FactoryWorks Module, Groundworks included, and a FactoryWorks Module may not name a Pillar or A Touch Of's Runtime, `atouchof`. 0.4.3 let a Pillar name a FactoryWorks Module and the reverse. A mod no suite lists is still checked against every suite's Modules but Groundworks and `atouchof`. A Module edits nothing: none names the other suite.
 - `libworks-plugin` 0.4.3: `checkPlaysAlone` checks a Module against its own suite's Modules, which its `mod_id` picks (ADR 0013). A Touch Of's Pillars, `atouchofcold`, `atouchofdarkness` and `atouchofmadness`, are checked against one another and may name their Runtime, `atouchof`, and no longer against FactoryWorks' Modules. A FactoryWorks Module's check is unchanged. A mod no suite lists is checked against every suite's Modules but Groundworks and `atouchof`. A Module edits nothing.
 - `libworks-runtime` 0.1.12: libworks-gametest's `GalleryCheck.MAX_SCENES` is 24, up from 16, so `builds` and `withPack` take a gallery of up to 24 scenes.
 - `libworks-runtime` 0.1.11: libworks-gametest's `GalleryCheck.MAX_SCENES` is 16, up from 12, so `builds` and `withPack` take a gallery of up to 16 scenes, such as Voidworks' 13; `Layout.ONE_ROW` holds as many.

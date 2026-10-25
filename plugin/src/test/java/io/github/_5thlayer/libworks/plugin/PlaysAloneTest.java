@@ -20,22 +20,34 @@ class PlaysAloneTest {
     private final PlaysAlone belt = new PlaysAlone("beltworks");
 
     @Test
-    void forbidsEveryModuleButItselfAndGroundworksAndTheRetiredPack() {
-        assertEquals(List.of("craftworks", "factoryworks", "fieldworks", "gearworks", "pipeworks", "voidworks", "wireworks"), belt.getForbidden());
-        assertEquals(List.of("beltworks", "craftworks", "factoryworks", "fieldworks", "gearworks", "pipeworks", "voidworks", "wireworks"),
-                new PlaysAlone("groundworks").getForbidden());
+    void forbidsEveryModuleButItselfAndGroundworksAndTheRetiredPackAndEveryPillar() {
+        assertEquals(List.of("atouchof", "atouchofcold", "atouchofdarkness", "atouchofmadness", "craftworks", "factoryworks", "fieldworks",
+                "gearworks", "pipeworks", "voidworks", "wireworks"), belt.getForbidden());
+        assertEquals(List.of("atouchof", "atouchofcold", "atouchofdarkness", "atouchofmadness", "beltworks", "craftworks", "factoryworks",
+                "fieldworks", "gearworks", "pipeworks", "voidworks", "wireworks"), new PlaysAlone("groundworks").getForbidden());
     }
 
     @Test
-    void aPillarForbidsTheOtherPillarsAndNoFactoryWorksModule() {
-        assertEquals(List.of("atouchofcold", "atouchofmadness"), new PlaysAlone("atouchofdarkness").getForbidden());
-        assertEquals(List.of("atouchofcold", "atouchofdarkness", "atouchofmadness"), new PlaysAlone("atouchof").getForbidden());
+    void aPillarForbidsTheOtherPillarsAndEveryFactoryWorksModuleGroundworksIncluded() {
+        assertEquals(List.of("atouchofcold", "atouchofmadness", "beltworks", "craftworks", "factoryworks", "fieldworks", "gearworks",
+                "groundworks", "pipeworks", "voidworks", "wireworks"), new PlaysAlone("atouchofdarkness").getForbidden());
+        assertEquals(List.of("atouchofcold", "atouchofdarkness", "atouchofmadness", "beltworks", "craftworks", "factoryworks", "fieldworks",
+                "gearworks", "groundworks", "pipeworks", "voidworks", "wireworks"), new PlaysAlone("atouchof").getForbidden());
     }
 
     @Test
-    void aPillarMayNameTheRuntimeAndAFactoryWorksModule(@TempDir Path resources) throws IOException {
-        write(resources.resolve("data/atouchofdarkness/recipe/x.json"), "{\"a\":\"atouchof:meter\",\"b\":\"pipeworks:pipe\",\"c\":\"atouchofmadness:x\"}");
-        assertEquals(List.of("data/atouchofdarkness/recipe/x.json names atouchofmadness:x"), new PlaysAlone("atouchofdarkness").ids(resources));
+    void aPillarMayNameTheRuntimeButNoFactoryWorksModule(@TempDir Path resources) throws IOException {
+        write(resources.resolve("data/atouchofdarkness/recipe/x.json"),
+                "{\"a\":\"atouchof:meter\",\"b\":\"pipeworks:pipe\",\"c\":\"atouchofmadness:x\",\"d\":\"groundworks:wrench\"}");
+        assertEquals(List.of("data/atouchofdarkness/recipe/x.json names pipeworks:pipe", "data/atouchofdarkness/recipe/x.json names atouchofmadness:x",
+                "data/atouchofdarkness/recipe/x.json names groundworks:wrench"), new PlaysAlone("atouchofdarkness").ids(resources));
+    }
+
+    @Test
+    void aFactoryWorksModuleMayNameNoPillarNorTheRuntime(@TempDir Path resources) throws IOException {
+        write(resources.resolve("data/beltworks/recipe/x.json"), "{\"a\":\"atouchof:meter\",\"b\":\"atouchofdarkness:shade\",\"c\":\"groundworks:wrench\"}");
+        assertEquals(List.of("data/beltworks/recipe/x.json names atouchof:meter", "data/beltworks/recipe/x.json names atouchofdarkness:shade"),
+                belt.ids(resources));
     }
 
     @Test

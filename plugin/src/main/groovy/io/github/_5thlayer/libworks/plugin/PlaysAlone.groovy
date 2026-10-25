@@ -36,6 +36,11 @@ final class PlaysAlone {
         List<String> forbiddenTo(String modId) {
             modules.findAll { it != modId && it != base } + retired
         }
+
+        /** Every Module, the base included, and the retired ids: what a Module of another suite may not name. */
+        List<String> forbiddenToOtherSuites() {
+            modules + retired
+        }
     }
 
     /**
@@ -56,19 +61,21 @@ final class PlaysAlone {
     final Suite suite
 
     /**
-     * The namespaces {@code modId} may not name: its suite's, or for a mod no suite lists every suite's, as
-     * its suite is not known (ADR 0013).
+     * The namespaces {@code modId} may not name: its suite's but its base, and every other suite's, bases
+     * included; or for a mod no suite lists every suite's but their bases, as its suite is not known (ADR 0013).
      */
     final List<String> forbidden
 
     PlaysAlone(String modId) {
         suite = SUITES.find { modId in it.modules }
-        forbidden = (suite ? suite.forbiddenTo(modId) : SUITES.collectMany { it.forbiddenTo(modId) }).sort()
+        forbidden = (suite
+                ? suite.forbiddenTo(modId) + (SUITES - suite).collectMany { it.forbiddenToOtherSuites() }
+                : SUITES.collectMany { it.forbiddenTo(modId) }).sort()
     }
 
     /** What a finding names: another Pillar, or another Module, and the ADRs that forbid it. */
     String naming() {
-        suite ? "another ${suite.term} (${suite.rule}, libworks ADR 0013)" : 'another Module (libworks ADR 0013)'
+        suite ? "another ${suite.term} or another suite's Module (${suite.rule}, libworks ADR 0013)" : 'another Module (libworks ADR 0013)'
     }
 
     /** What the processed resources under {@code resources} ship against the rules: ids, namespace folders and required mods. */
