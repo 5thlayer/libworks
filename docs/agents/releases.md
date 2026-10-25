@@ -6,7 +6,7 @@ A Module that names its Modrinth and CurseForge projects in `gradle.properties` 
 
 ## The changelog
 
-Each change a Consumer can use or will notice adds its line under `## Unreleased` in `CHANGELOG.md` when it lands, written for a Consumer's author in the glossary's terms, with its issue number. A release ships what Unreleased lists, so the changelog is written as the work is done and never reconstructed from commits.
+Each change a Consumer can use or will notice adds its line under `## Unreleased` in `CHANGELOG.md` when it lands, with its issue number, written for a Consumer's author in the glossary's terms. A Module whose changelog has other readers too, such as the players who read a release's notes on Modrinth and CurseForge, names them here, and how it writes for them. A release ships what Unreleased lists, so the changelog is written as the work is done and never reconstructed from commits.
 
 ## Cutting a release
 
