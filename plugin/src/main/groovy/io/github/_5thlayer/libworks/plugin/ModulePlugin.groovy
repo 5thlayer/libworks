@@ -208,8 +208,8 @@ class ModulePlugin implements Plugin<Project> {
     }
 
     /**
-     * The Module plays alone on Groundworks (FactoryWorks ADR-0127): nothing it ships names another Module's
-     * id or namespace, or requires another Module (ADR 0005). The resources are read as processed, so
+     * The Module plays alone (FactoryWorks ADR-0127, A Touch Of ADR-0002): nothing it ships names another
+     * Module of its suite by id or namespace, or requires one (ADR 0005, ADR 0013). The resources are read as processed, so
      * generated ones and the expanded mods.toml count.
      */
     private static void configurePlaysAlone(Project project, Closure<String> property) {
@@ -231,7 +231,7 @@ class ModulePlugin implements Plugin<Project> {
                 def found = underRoot(processed.get(), rules.resources(processed.get().toPath()))
                 code.files.each { found += underRoot(it, rules.code(it.toPath())) }
                 if (found) throw new GradleException(
-                        "$modId ships what names another Module (FactoryWorks ADR-0127, libworks ADR 0005), whose namespaces are ${rules.forbidden.join(', ')}:\n  ${found.sort().join('\n  ')}")
+                        "$modId ships what names ${rules.naming()}, whose namespaces are ${rules.forbidden.join(', ')}:\n  ${found.sort().join('\n  ')}")
             }
         }
         project.tasks.named('check') { dependsOn check }

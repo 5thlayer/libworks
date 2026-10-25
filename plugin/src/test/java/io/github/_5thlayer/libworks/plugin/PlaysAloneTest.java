@@ -15,7 +15,7 @@ import java.util.zip.GZIPOutputStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-/** Each rule of the plays-alone scan, on files written for it: Beltworks is the Module scanned. */
+/** Each rule of the plays-alone scan, on files written for it: Beltworks is the Module scanned unless a test names another. */
 class PlaysAloneTest {
     private final PlaysAlone belt = new PlaysAlone("beltworks");
 
@@ -24,6 +24,24 @@ class PlaysAloneTest {
         assertEquals(List.of("craftworks", "factoryworks", "fieldworks", "gearworks", "pipeworks", "voidworks", "wireworks"), belt.getForbidden());
         assertEquals(List.of("beltworks", "craftworks", "factoryworks", "fieldworks", "gearworks", "pipeworks", "voidworks", "wireworks"),
                 new PlaysAlone("groundworks").getForbidden());
+    }
+
+    @Test
+    void aPillarForbidsTheOtherPillarsAndNoFactoryWorksModule() {
+        assertEquals(List.of("atouchofcold", "atouchofmadness"), new PlaysAlone("atouchofdarkness").getForbidden());
+        assertEquals(List.of("atouchofcold", "atouchofdarkness", "atouchofmadness"), new PlaysAlone("atouchof").getForbidden());
+    }
+
+    @Test
+    void aPillarMayNameTheRuntimeAndAFactoryWorksModule(@TempDir Path resources) throws IOException {
+        write(resources.resolve("data/atouchofdarkness/recipe/x.json"), "{\"a\":\"atouchof:meter\",\"b\":\"pipeworks:pipe\",\"c\":\"atouchofmadness:x\"}");
+        assertEquals(List.of("data/atouchofdarkness/recipe/x.json names atouchofmadness:x"), new PlaysAlone("atouchofdarkness").ids(resources));
+    }
+
+    @Test
+    void aModNoSuiteListsForbidsEverySuitesModulesButTheirBases() {
+        assertEquals(List.of("atouchofcold", "atouchofdarkness", "atouchofmadness", "beltworks", "craftworks", "factoryworks", "fieldworks",
+                "gearworks", "pipeworks", "voidworks", "wireworks"), new PlaysAlone("examplelib").getForbidden());
     }
 
     @Test

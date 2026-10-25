@@ -10,25 +10,65 @@ import java.util.regex.Pattern
 import java.util.zip.GZIPInputStream
 
 /**
- * What a Module ships that stops it playing alone on Groundworks (FactoryWorks ADR-0127), one scan per
- * rule, over the Module list of libworks ADR 0005. Each finding reads as the Modules' own copies did.
+ * What a Module ships that stops it playing alone (FactoryWorks ADR-0127, A Touch Of ADR-0002), one scan
+ * per rule, over its suite's Module list (libworks ADR 0005, ADR 0013). Each finding reads as the Modules'
+ * own copies did.
  */
 final class PlaysAlone {
 
-    /** Every Module of FactoryWorks. */
-    static final List<String> MODULES = ['beltworks', 'craftworks', 'fieldworks', 'gearworks', 'groundworks', 'pipeworks', 'voidworks', 'wireworks']
+    /** One suite: what it calls its Modules, the ADR that has them play alone, its Modules, the base among them that every one may require, and the retired ids none may name. */
+    static final class Suite {
+        final String term
+        final String rule
+        final String base
+        final List<String> modules
+        final List<String> retired
 
-    /** Not a Module since FactoryWorks Core retired (FactoryWorks ADR-0128), and no Module may name it either. */
-    static final String RETIRED_PACK = 'factoryworks'
+        Suite(String term, String rule, String base, List<String> modules, List<String> retired) {
+            this.term = term
+            this.rule = rule
+            this.base = base
+            this.modules = modules
+            this.retired = retired
+        }
+
+        /** Every Module but {@code modId} and the base, and the retired ids. */
+        List<String> forbiddenTo(String modId) {
+            modules.findAll { it != modId && it != base } + retired
+        }
+    }
+
+    /**
+     * Every suite. FactoryWorks Core retired (FactoryWorks ADR-0128), so no Module may name {@code factoryworks};
+     * the A Touch Of Runtime, {@code atouchof}, is the base every Pillar nests (A Touch Of ADR-0002).
+     */
+    static final List<Suite> SUITES = [
+            new Suite('Module', 'FactoryWorks ADR-0127', 'groundworks',
+                    ['beltworks', 'craftworks', 'fieldworks', 'gearworks', 'groundworks', 'pipeworks', 'voidworks', 'wireworks'], ['factoryworks']),
+            new Suite('Pillar', 'A Touch Of ADR-0002', 'atouchof',
+                    ['atouchof', 'atouchofcold', 'atouchofdarkness', 'atouchofmadness'], []),
+    ]
 
     private static final Pattern DEPENDENCY_MOD_ID = ~/(?m)^\s*modId\s*=\s*"([^"]+)"/
     private static final Pattern DEPENDENCY_TYPE = ~/(?m)^\s*type\s*=\s*"([^"]+)"/
 
-    /** The namespaces {@code modId} may not name: every Module but itself and Groundworks, which every Module may require, and the retired pack. */
+    /** The suite whose Modules hold {@code modId}, or null for a mod no suite lists, such as the template's own. */
+    final Suite suite
+
+    /**
+     * The namespaces {@code modId} may not name: its suite's, or for a mod no suite lists every suite's, as
+     * its suite is not known (ADR 0013).
+     */
     final List<String> forbidden
 
     PlaysAlone(String modId) {
-        forbidden = (MODULES.findAll { it != modId && it != 'groundworks' } + RETIRED_PACK).sort()
+        suite = SUITES.find { modId in it.modules }
+        forbidden = (suite ? suite.forbiddenTo(modId) : SUITES.collectMany { it.forbiddenTo(modId) }).sort()
+    }
+
+    /** What a finding names: another Pillar, or another Module, and the ADRs that forbid it. */
+    String naming() {
+        suite ? "another ${suite.term} (${suite.rule}, libworks ADR 0013)" : 'another Module (libworks ADR 0013)'
     }
 
     /** What the processed resources under {@code resources} ship against the rules: ids, namespace folders and required mods. */

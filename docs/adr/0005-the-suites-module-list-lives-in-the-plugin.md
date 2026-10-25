@@ -20,3 +20,6 @@ each Module (#17), in its `gametest` source set since ADR 0011.
 **Considered.** A test-fixtures artifact, `libworks-testing`: a third artifact to version and release
 beside the plugin and the runtime, and a test in each Module that can still miss a folder it ships. The
 template alone: copies picked up by hand, which is how the drift came about.
+
+**Amended 2026-10-25 (ADR 0013).** The plugin holds one Module list per suite, and a Module is checked
+against its own suite's list, which its `mod_id` picks.
