@@ -44,6 +44,11 @@ final class PlaysAlone {
             modules.findAll { it != modId && it != base } + retired
         }
 
+        /** Whether {@code modId} may add optional entries to {@code namespace}'s tags: another Module of this suite, the base never adding (ADR 0014). */
+        boolean takesOptionalTagEntries(String modId, String namespace) {
+            optionalTagEntries && modId != base && namespace in modules
+        }
+
         /** Every Module, the base included, and the retired ids: what a Module of another suite may not name. */
         List<String> forbiddenToOtherSuites() {
             modules + retired
@@ -53,13 +58,13 @@ final class PlaysAlone {
     /**
      * Every suite. FactoryWorks Core retired (FactoryWorks ADR-0128), so no Module may name {@code factoryworks};
      * the A Touch Of Runtime, {@code atouchof}, is the base every Pillar nests (A Touch Of ADR-0002), and
-     * {@code atouchofcold} is shelved in favour of Tough As Nails, so no Pillar may come to depend on it (atouchof#5).
+     * {@code atouchofcold} is shelved in favour of Tough As Nails, so no Pillar may come to depend on it (A Touch Of #5).
      */
     static final List<Suite> SUITES = [
             new Suite('Module', 'FactoryWorks ADR-0127', 'groundworks',
                     ['beltworks', 'craftworks', 'fieldworks', 'gearworks', 'groundworks', 'pipeworks', 'voidworks', 'wireworks'], ['factoryworks']),
             new Suite('Pillar', 'A Touch Of ADR-0002', 'atouchof',
-                    ['atouchof', 'atouchofdarkness', 'atouchofmadness', 'atouchofwickedness'], ['atouchofcold'], true),
+                    ['atouchof', 'atouchofdarkness', 'atouchofmadness', 'atouchofwickedness'], ['atouchofcold'], /* optionalTagEntries */ true),
     ]
 
     private static final Pattern DEPENDENCY_MOD_ID = ~/(?m)^\s*modId\s*=\s*"([^"]+)"/
@@ -68,6 +73,7 @@ final class PlaysAlone {
     /** The suite whose Modules hold {@code modId}, or null for a mod no suite lists, such as the template's own. */
     final Suite suite
 
+    /** The Module built. */
     final String modId
 
     /**
@@ -114,7 +120,7 @@ final class PlaysAlone {
     /**
      * Each {@code assets/<namespace>} or {@code data/<namespace>} folder under {@code resources} that is forbidden. Where the suite lets a
      * Module add optional entries to another Module's tags, that Module's data folder is read file by file instead, and each file that is
-     * not such a tag is reported (ADR 0014).
+     * not such a tag is reported, with why (ADR 0014).
      */
     List<String> namespaces(Path resources) {
         def found = []
@@ -123,40 +129,37 @@ final class PlaysAlone {
             if (!Files.isDirectory(dir)) return
             def names = Files.list(dir).withCloseable { it.map { it.fileName.toString() }.filter { forbidden.contains(it) }.sorted().toList() }
             names.each { namespace ->
-                if (kind == 'data' && mayTag(namespace)) found += optionalTags(resources, dir.resolve(namespace))
+                if (kind == 'data' && suite?.takesOptionalTagEntries(modId, namespace)) found += notOptionalTags(resources, dir.resolve(namespace))
                 else found << "$kind/$namespace".toString()
             }
         }
         found
     }
 
-    /** Whether this Module may add optional entries to {@code namespace}'s tags: another Module of its own suite that takes them, never the base building. */
-    private boolean mayTag(String namespace) {
-        suite?.optionalTagEntries && modId != suite.base && namespace in suite.modules
-    }
-
-    /** Each file under {@code namespace} that is not a tag of the Module's own ids, every entry optional, that keeps the tag's other entries. */
-    private List<String> optionalTags(Path resources, Path namespace) {
+    /**
+     * What the files under another Module's {@code namespace} folder ship beyond optional entries of this Module's own ids: each file
+     * outside {@code tags/} or not a tag, and in a tag each entry that is required or not its own, a {@code replace} and a {@code remove}.
+     */
+    private List<String> notOptionalTags(Path resources, Path namespace) {
         def tags = namespace.resolve('tags')
         files(namespace).collectMany { file ->
             def name = relative(resources, file)
             if (!file.startsWith(tags) || !file.toString().endsWith('.json')) return [name]
-            def tag
+            def tag = null
             try {
                 tag = new JsonSlurper().parse(file.toFile())
             } catch (ignored) {
-                return ["$name is not a tag".toString()]
             }
             if (!(tag instanceof Map) || !(tag.values instanceof List)) return ["$name is not a tag".toString()]
             def found = []
             if (tag.replace) found << "$name replaces the tag".toString()
+            // NeoForge reads a tag's "remove" list too, which would take entries out of the other Module's tag.
+            if (tag.remove) found << "$name removes from the tag".toString()
             tag.values.each { entry ->
                 // A bare id, or an entry with no "required", is required: the tag fails to load without it.
                 def id = entry instanceof Map ? entry.id : entry
                 if (!(entry instanceof Map) || entry.required != false) found << "$name requires $id".toString()
-                else if (!(id instanceof String) || !(id - ~/^#/).startsWith("$modId:")) {
-                    found << "$name adds $id, not $modId's own".toString()
-                }
+                else if (!(id instanceof String) || !(id - ~/^#/).startsWith("$modId:")) found << "$name adds $id, not $modId's own".toString()
             }
             found
         }
