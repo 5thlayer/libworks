@@ -74,6 +74,7 @@ class PlaysAloneTest {
                 "{\"replace\": false, \"values\": [{\"id\": \"atouchofwickedness:bailiff\", \"required\": false}]}");
         write(resources.resolve("data/atouchofdarkness/tags/item/x.json"), "{\"values\": [{\"id\": \"#atouchofwickedness:seals\", \"required\": false}]}");
         assertEquals(List.of(), wicked.namespaces(resources));
+        assertEquals(List.of(), wicked.otherTags(resources));
     }
 
     @Test
@@ -87,13 +88,15 @@ class PlaysAloneTest {
         write(resources.resolve("data/atouchofmadness/tags/entity_type/e.json"), "{\"values\": [{\"id\": \"minecraft:zombie\", \"required\": false}]}");
         write(resources.resolve("data/atouchofmadness/tags/entity_type/f.json"), "[]");
         write(resources.resolve("data/atouchofmadness/tags/entity_type/g.json"), "{\"values\": [], \"remove\": [\"atouchofmadness:x\"]}");
+        write(resources.resolve("data/atouchofmadness/tags/h.json"), "{\"values\": [{\"id\": \"atouchofwickedness:bailiff\", \"required\": false}]}");
         assertEquals(List.of("data/atouchofmadness/tags/entity_type/a.json requires atouchofwickedness:bailiff",
                 "data/atouchofmadness/tags/entity_type/b.json requires atouchofwickedness:bailiff",
                 "data/atouchofmadness/tags/entity_type/c.json requires atouchofwickedness:bailiff",
                 "data/atouchofmadness/tags/entity_type/d.json replaces the tag",
                 "data/atouchofmadness/tags/entity_type/e.json adds minecraft:zombie, not atouchofwickedness's own",
                 "data/atouchofmadness/tags/entity_type/f.json is not a tag",
-                "data/atouchofmadness/tags/entity_type/g.json removes from the tag"), wicked.namespaces(resources));
+                "data/atouchofmadness/tags/entity_type/g.json removes from the tag",
+                "data/atouchofmadness/tags/h.json is not a tag"), wicked.otherTags(resources));
     }
 
     @Test
@@ -102,7 +105,8 @@ class PlaysAloneTest {
                 "{\"values\": [{\"id\": \"atouchofwickedness:bailiff\", \"required\": false}]}");
         write(resources.resolve("data/atouchofmadness/recipe/x.json"), "{}");
         write(resources.resolve("assets/atouchofmadness/lang/en_us.json"), "{}");
-        assertEquals(List.of("assets/atouchofmadness", "data/atouchofmadness/recipe/x.json"), wicked.namespaces(resources));
+        assertEquals(List.of("assets/atouchofmadness"), wicked.namespaces(resources));
+        assertEquals(List.of("data/atouchofmadness/recipe/x.json"), wicked.otherTags(resources));
     }
 
     @Test
@@ -111,9 +115,11 @@ class PlaysAloneTest {
         write(resources.resolve("data/atouchofcold/tags/item/x.json"), optional.formatted("atouchofwickedness"));
         write(resources.resolve("data/pipeworks/tags/item/x.json"), optional.formatted("atouchofwickedness"));
         assertEquals(List.of("data/atouchofcold", "data/pipeworks"), wicked.namespaces(resources));
+        assertEquals(List.of(), wicked.otherTags(resources));
         write(resources.resolve("data/fieldworks/tags/item/x.json"), optional.formatted("beltworks"));
         write(resources.resolve("data/atouchofmadness/tags/item/x.json"), optional.formatted("beltworks"));
         assertEquals(List.of("data/atouchofcold", "data/atouchofmadness", "data/fieldworks", "data/pipeworks"), belt.namespaces(resources));
+        assertEquals(List.of(), belt.otherTags(resources));
     }
 
     @Test
