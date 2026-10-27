@@ -17,7 +17,8 @@ files under another Module's `data/<ns>/tags/`. Each must be a tag whose `replac
 false, and whose every entry is an object with `"required": false` naming one of the Module's own
 ids or tags. The scan reads that namespace's data folder file by file. It reports each file outside
 `tags/` and each file that is not a tag, and for a tag it names each bare or required entry, a
-`replace: true` and each id that is not the Module's own. The exception does not cover an
+`replace: true`, a NeoForge `remove` list, which would take entries out of the other tag, and each id
+that is not the Module's own. The exception does not cover an
 `assets/<ns>` folder, the base, a retired id such as the shelved `atouchofcold`, or another
 suite's namespace.
 

@@ -86,16 +86,18 @@ class PlaysAloneTest {
                 "{\"replace\": true, \"values\": [{\"id\": \"atouchofwickedness:bailiff\", \"required\": false}]}");
         write(resources.resolve("data/atouchofmadness/tags/entity_type/e.json"), "{\"values\": [{\"id\": \"minecraft:zombie\", \"required\": false}]}");
         write(resources.resolve("data/atouchofmadness/tags/entity_type/f.json"), "[]");
+        write(resources.resolve("data/atouchofmadness/tags/entity_type/g.json"), "{\"values\": [], \"remove\": [\"atouchofmadness:x\"]}");
         assertEquals(List.of("data/atouchofmadness/tags/entity_type/a.json requires atouchofwickedness:bailiff",
                 "data/atouchofmadness/tags/entity_type/b.json requires atouchofwickedness:bailiff",
                 "data/atouchofmadness/tags/entity_type/c.json requires atouchofwickedness:bailiff",
                 "data/atouchofmadness/tags/entity_type/d.json replaces the tag",
                 "data/atouchofmadness/tags/entity_type/e.json adds minecraft:zombie, not atouchofwickedness's own",
-                "data/atouchofmadness/tags/entity_type/f.json is not a tag"), wicked.namespaces(resources));
+                "data/atouchofmadness/tags/entity_type/f.json is not a tag",
+                "data/atouchofmadness/tags/entity_type/g.json removes from the tag"), wicked.namespaces(resources));
     }
 
     @Test
-    void anotherPillarsDataOutsideItsTagsOrAssetsAreReported(@TempDir Path resources) throws IOException {
+    void anotherPillarsAssetsOrDataOutsideItsTagsAreReported(@TempDir Path resources) throws IOException {
         write(resources.resolve("data/atouchofmadness/tags/entity_type/unsettling.json"),
                 "{\"values\": [{\"id\": \"atouchofwickedness:bailiff\", \"required\": false}]}");
         write(resources.resolve("data/atouchofmadness/recipe/x.json"), "{}");
