@@ -88,6 +88,8 @@ class PlaysAloneTest {
         write(resources.resolve("data/atouchofmadness/tags/entity_type/e.json"), "{\"values\": [{\"id\": \"minecraft:zombie\", \"required\": false}]}");
         write(resources.resolve("data/atouchofmadness/tags/entity_type/f.json"), "[]");
         write(resources.resolve("data/atouchofmadness/tags/entity_type/g.json"), "{\"values\": [], \"remove\": [\"atouchofmadness:x\"]}");
+        write(resources.resolve("data/atouchofmadness/tags/entity_type/i.json"), "{\"values\": [], \"remove\": []}");
+        write(resources.resolve("data/atouchofmadness/tags/entity_type/j.txt"), "atouchofwickedness:bailiff");
         write(resources.resolve("data/atouchofmadness/tags/h.json"), "{\"values\": [{\"id\": \"atouchofwickedness:bailiff\", \"required\": false}]}");
         assertEquals(List.of("data/atouchofmadness/tags/entity_type/a.json requires atouchofwickedness:bailiff",
                 "data/atouchofmadness/tags/entity_type/b.json requires atouchofwickedness:bailiff",
@@ -96,6 +98,8 @@ class PlaysAloneTest {
                 "data/atouchofmadness/tags/entity_type/e.json adds minecraft:zombie, not atouchofwickedness's own",
                 "data/atouchofmadness/tags/entity_type/f.json is not a tag",
                 "data/atouchofmadness/tags/entity_type/g.json removes from the tag",
+                "data/atouchofmadness/tags/entity_type/i.json removes from the tag",
+                "data/atouchofmadness/tags/entity_type/j.txt is not a tag",
                 "data/atouchofmadness/tags/h.json is not a tag"), wicked.otherTags(resources));
     }
 
@@ -106,7 +110,15 @@ class PlaysAloneTest {
         write(resources.resolve("data/atouchofmadness/recipe/x.json"), "{}");
         write(resources.resolve("assets/atouchofmadness/lang/en_us.json"), "{}");
         assertEquals(List.of("assets/atouchofmadness"), wicked.namespaces(resources));
-        assertEquals(List.of("data/atouchofmadness/recipe/x.json"), wicked.otherTags(resources));
+        assertEquals(List.of("data/atouchofmadness/recipe/x.json is outside tags/"), wicked.otherTags(resources));
+    }
+
+    @Test
+    void theRuntimeMayAddNoEntryToAPillarsTag(@TempDir Path resources) throws IOException {
+        write(resources.resolve("data/atouchofmadness/tags/item/x.json"), "{\"values\": [{\"id\": \"atouchof:x\", \"required\": false}]}");
+        PlaysAlone runtime = new PlaysAlone("atouchof");
+        assertEquals(List.of("data/atouchofmadness"), runtime.namespaces(resources));
+        assertEquals(List.of(), runtime.otherTags(resources));
     }
 
     @Test
