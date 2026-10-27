@@ -119,6 +119,8 @@ class PlaysAloneTest {
         write(tags.resolve("d.json"), "{\"replace\": \"false\", \"values\": []}");
         write(tags.resolve("e.json"), "{\"remove\": [\"atouchofmadness:x\"]}");
         write(tags.resolve("f.json"), "{\"values\": [{\"required\": false}, {\"id\": null, \"required\": false}, {\"id\": 3, \"required\": false}]}");
+        write(tags.resolve("g.json"), "{\"values\": [{}, {\"id\": 3}]}");
+        write(tags.resolve("h.json"), "{\"values\": [{\"id\": \"atouchofwickedness\", \"required\": false}, {\"id\": \"#bailiffs\", \"required\": false}]}");
         assertEquals(List.of("data/atouchofmadness/tags/entity_type/a.json is not valid JSON",
                 "data/atouchofmadness/tags/entity_type/b.json is not valid JSON",
                 "data/atouchofmadness/tags/entity_type/c.json is not a tag",
@@ -126,7 +128,11 @@ class PlaysAloneTest {
                 "data/atouchofmadness/tags/entity_type/e.json removes from the tag",
                 "data/atouchofmadness/tags/entity_type/f.json has an entry with no id",
                 "data/atouchofmadness/tags/entity_type/f.json has an entry with no id",
-                "data/atouchofmadness/tags/entity_type/f.json has an entry with no id"), wicked.otherTags(resources));
+                "data/atouchofmadness/tags/entity_type/f.json has an entry with no id",
+                "data/atouchofmadness/tags/entity_type/g.json has an entry with no id",
+                "data/atouchofmadness/tags/entity_type/g.json has an entry with no id",
+                "data/atouchofmadness/tags/entity_type/h.json adds minecraft:atouchofwickedness, not atouchofwickedness's own",
+                "data/atouchofmadness/tags/entity_type/h.json adds #minecraft:bailiffs, not atouchofwickedness's own"), wicked.otherTags(resources));
     }
 
     @Test

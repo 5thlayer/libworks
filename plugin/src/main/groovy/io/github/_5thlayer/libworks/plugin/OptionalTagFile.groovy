@@ -38,14 +38,22 @@ final class OptionalTagFile {
         else if (tag.containsKey('replace') && tag.replace != false) found << "$name sets replace to ${JsonOutput.toJson(tag.replace)}, not a boolean".toString()
         tag.values.each { entry ->
             def id = entry instanceof Map ? entry.id : entry
-            // A bare id, or an entry with no "required", is required: the tag fails to load without it.
-            if (!(entry instanceof Map) || entry.required != false) found << "$name requires $id".toString()
-            else if (!(id instanceof String)) found << "$name has an entry with no id".toString()
-            else {
-                def namespaceOf = (id - ~/^#/).split(':')[0]
-                // An id in a forbidden namespace is already named by PlaysAlone.ids.
-                if (namespaceOf != modId && !forbidden.contains(namespaceOf)) found << "$name adds $id, not $modId's own".toString()
+            if (!(id instanceof String)) {
+                found << "$name has an entry with no id".toString()
+                return
             }
+            // A bare id, or an entry with no "required", is required: the tag fails to load without it.
+            if (!(entry instanceof Map) || entry.required != false) {
+                found << "$name requires $id".toString()
+                return
+            }
+            def tagRef = id.startsWith('#') ? '#' : ''
+            def path = id - ~/^#/
+            // Vanilla reads an id with no namespace as minecraft's.
+            def full = path.contains(':') ? path : "minecraft:$path"
+            def namespaceOf = full.split(':')[0]
+            // An id in a forbidden namespace is already named by PlaysAlone.ids.
+            if (namespaceOf != modId && !forbidden.contains(namespaceOf)) found << "$name adds $tagRef$full, not $modId's own".toString()
         }
         found
     }
