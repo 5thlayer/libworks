@@ -73,7 +73,7 @@ final class PlaysAlone {
     /** The suite whose Modules hold {@code modId}, or null for a mod no suite lists, such as the template's own. */
     final Suite suite
 
-    /** The Module built. */
+    /** The Module built, whose own ids alone an optional entry in another Module's tag may name (ADR 0014). */
     final String modId
 
     /**
@@ -124,7 +124,7 @@ final class PlaysAlone {
     List<String> namespaces(Path resources) {
         def found = []
         ['assets', 'data'].each { kind ->
-            forbiddenFolders(resources, kind).findAll { kind != 'data' || !takesTagsOf(it) }.each { found << "$kind/$it".toString() }
+            forbiddenFolders(resources, kind).findAll { kind != 'data' || !suite?.takesOptionalTagEntries(modId, it) }.each { found << "$kind/$it".toString() }
         }
         found
     }
@@ -135,7 +135,7 @@ final class PlaysAlone {
      * a {@code replace} and a {@code remove}.
      */
     List<String> otherTags(Path resources) {
-        forbiddenFolders(resources, 'data').findAll { takesTagsOf(it) }.collectMany { notOptionalTags(resources, resources.resolve("data/$it")) }
+        forbiddenFolders(resources, 'data').findAll { suite?.takesOptionalTagEntries(modId, it) }.collectMany { tagFindings(resources, resources.resolve("data/$it")) }
     }
 
     private List<String> forbiddenFolders(Path resources, String kind) {
@@ -144,26 +144,22 @@ final class PlaysAlone {
         Files.list(dir).withCloseable { it.map { it.fileName.toString() }.filter { forbidden.contains(it) }.sorted().toList() }
     }
 
-    private boolean takesTagsOf(String namespace) {
-        suite?.takesOptionalTagEntries(modId, namespace)
-    }
-
-    private List<String> notOptionalTags(Path resources, Path namespace) {
+    private List<String> tagFindings(Path resources, Path namespace) {
         def tags = namespace.resolve('tags')
         files(namespace).collectMany { file ->
             def name = relative(resources, file)
-            if (!file.startsWith(tags) || !file.toString().endsWith('.json')) return [name]
+            if (!file.startsWith(tags)) return ["$name is outside tags/".toString()]
             def tag = null
             try {
-                tag = new JsonSlurper().parse(file.toFile())
+                if (file.toString().endsWith('.json')) tag = new JsonSlurper().parse(file.toFile())
             } catch (ignored) {
             }
-            // A tag file sits in its registry's folder, tags/<registry>/; vanilla reads none directly under tags/.
+            // A tag file sits in its registry's folder, tags/<registry>/; vanilla reads none directly under tags/ (ADR 0014).
             if (file.parent == tags || !(tag instanceof Map) || !(tag.values instanceof List)) return ["$name is not a tag".toString()]
             def found = []
             if (tag.replace) found << "$name replaces the tag".toString()
             // NeoForge reads a tag's "remove" list too, which would take entries out of the other Module's tag (ADR 0014).
-            if (tag.remove) found << "$name removes from the tag".toString()
+            if (tag.containsKey('remove')) found << "$name removes from the tag".toString()
             tag.values.each { entry ->
                 // A bare id, or an entry with no "required", is required: the tag fails to load without it (ADR 0014).
                 def id = entry instanceof Map ? entry.id : entry
