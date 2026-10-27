@@ -3,6 +3,8 @@
 
 package io.github._5thlayer.libworks.plugin
 
+import groovy.json.JsonSlurper
+
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
@@ -16,20 +18,25 @@ import java.util.zip.GZIPInputStream
  */
 final class PlaysAlone {
 
-    /** One suite: what it calls its Modules, the ADR that has them play alone, its Modules, the base among them that every one may require, and the retired ids none may name. */
+    /**
+     * One suite: what it calls its Modules, the ADR that has them play alone, its Modules, the base among them that every one may require,
+     * the retired ids none may name, and whether a Module may add optional entries to another Module's tags (ADR 0014).
+     */
     static final class Suite {
         final String term
         final String rule
         final String base
         final List<String> modules
         final List<String> retired
+        final boolean optionalTagEntries
 
-        Suite(String term, String rule, String base, List<String> modules, List<String> retired) {
+        Suite(String term, String rule, String base, List<String> modules, List<String> retired, boolean optionalTagEntries = false) {
             this.term = term
             this.rule = rule
             this.base = base
             this.modules = modules
             this.retired = retired
+            this.optionalTagEntries = optionalTagEntries
         }
 
         /** Every Module but {@code modId} and the base, and the retired ids. */
@@ -45,13 +52,14 @@ final class PlaysAlone {
 
     /**
      * Every suite. FactoryWorks Core retired (FactoryWorks ADR-0128), so no Module may name {@code factoryworks};
-     * the A Touch Of Runtime, {@code atouchof}, is the base every Pillar nests (A Touch Of ADR-0002).
+     * the A Touch Of Runtime, {@code atouchof}, is the base every Pillar nests (A Touch Of ADR-0002), and
+     * {@code atouchofcold} is shelved in favour of Tough As Nails, so no Pillar may come to depend on it (atouchof#5).
      */
     static final List<Suite> SUITES = [
             new Suite('Module', 'FactoryWorks ADR-0127', 'groundworks',
                     ['beltworks', 'craftworks', 'fieldworks', 'gearworks', 'groundworks', 'pipeworks', 'voidworks', 'wireworks'], ['factoryworks']),
             new Suite('Pillar', 'A Touch Of ADR-0002', 'atouchof',
-                    ['atouchof', 'atouchofcold', 'atouchofdarkness', 'atouchofmadness'], []),
+                    ['atouchof', 'atouchofdarkness', 'atouchofmadness', 'atouchofwickedness'], ['atouchofcold'], true),
     ]
 
     private static final Pattern DEPENDENCY_MOD_ID = ~/(?m)^\s*modId\s*=\s*"([^"]+)"/
@@ -60,6 +68,8 @@ final class PlaysAlone {
     /** The suite whose Modules hold {@code modId}, or null for a mod no suite lists, such as the template's own. */
     final Suite suite
 
+    final String modId
+
     /**
      * The namespaces {@code modId} may not name: its suite's but its base, and every other suite's, bases
      * included; or for a mod no suite lists every suite's but their bases, as its suite is not known (ADR 0013).
@@ -67,6 +77,7 @@ final class PlaysAlone {
     final List<String> forbidden
 
     PlaysAlone(String modId) {
+        this.modId = modId
         suite = SUITES.find { modId in it.modules }
         forbidden = (suite
                 ? suite.forbiddenTo(modId) + (SUITES - suite).collectMany { it.forbiddenToOtherSuites() }
@@ -100,18 +111,55 @@ final class PlaysAlone {
         found
     }
 
-    /** Each {@code assets/<namespace>} or {@code data/<namespace>} folder under {@code resources} that is forbidden. */
+    /**
+     * Each {@code assets/<namespace>} or {@code data/<namespace>} folder under {@code resources} that is forbidden. Where the suite lets a
+     * Module add optional entries to another Module's tags, that Module's data folder is read file by file instead, and each file that is
+     * not such a tag is reported (ADR 0014).
+     */
     List<String> namespaces(Path resources) {
         def found = []
         ['assets', 'data'].each { kind ->
             def dir = resources.resolve(kind)
             if (!Files.isDirectory(dir)) return
-            Files.list(dir).withCloseable { namespaces ->
-                namespaces.map { it.fileName.toString() }.filter { forbidden.contains(it) }.sorted()
-                        .forEach { found << "$kind/$it".toString() }
+            def names = Files.list(dir).withCloseable { it.map { it.fileName.toString() }.filter { forbidden.contains(it) }.sorted().toList() }
+            names.each { namespace ->
+                if (kind == 'data' && mayTag(namespace)) found += optionalTags(resources, dir.resolve(namespace))
+                else found << "$kind/$namespace".toString()
             }
         }
         found
+    }
+
+    /** Whether this Module may add optional entries to {@code namespace}'s tags: another Module of its own suite that takes them, never the base building. */
+    private boolean mayTag(String namespace) {
+        suite?.optionalTagEntries && modId != suite.base && namespace in suite.modules
+    }
+
+    /** Each file under {@code namespace} that is not a tag of the Module's own ids, every entry optional, that keeps the tag's other entries. */
+    private List<String> optionalTags(Path resources, Path namespace) {
+        def tags = namespace.resolve('tags')
+        files(namespace).collectMany { file ->
+            def name = relative(resources, file)
+            if (!file.startsWith(tags) || !file.toString().endsWith('.json')) return [name]
+            def tag
+            try {
+                tag = new JsonSlurper().parse(file.toFile())
+            } catch (ignored) {
+                return ["$name is not a tag".toString()]
+            }
+            if (!(tag instanceof Map) || !(tag.values instanceof List)) return ["$name is not a tag".toString()]
+            def found = []
+            if (tag.replace) found << "$name replaces the tag".toString()
+            tag.values.each { entry ->
+                // A bare id, or an entry with no "required", is required: the tag fails to load without it.
+                def id = entry instanceof Map ? entry.id : entry
+                if (!(entry instanceof Map) || entry.required != false) found << "$name requires $id".toString()
+                else if (!(id instanceof String) || !(id - ~/^#/).startsWith("$modId:")) {
+                    found << "$name adds $id, not $modId's own".toString()
+                }
+            }
+            found
+        }
     }
 
     /** Each string in the Java source under {@code code} that is a forbidden namespace, as an id built in code names it. */

@@ -456,9 +456,21 @@ class ModulePluginTest {
         write("src/main/java/dark/Dark.java", "package dark; class Dark { String sanity = \"atouchofmadness:sanity\"; String meter = \"atouchof:meter\"; String pipe = \"pipeworks:pipe\"; }\n");
         String out = fail("checkPlaysAlone").getOutput();
         assertTrue(out.contains("atouchofdarkness ships what names another Pillar or another suite's Module (A Touch Of ADR-0002, libworks ADR 0013), whose namespaces are "
-                + "atouchofcold, atouchofmadness, beltworks, craftworks, factoryworks, fieldworks, gearworks, groundworks, pipeworks, voidworks, wireworks:\n"
+                + "atouchofcold, atouchofmadness, atouchofwickedness, beltworks, craftworks, factoryworks, fieldworks, gearworks, groundworks, pipeworks, voidworks, wireworks:\n"
                 + "  src/main/java/dark/Dark.java names atouchofmadness:sanity\n"
                 + "  src/main/java/dark/Dark.java names pipeworks:pipe\n"), out);
+    }
+
+    @Test
+    void checkPlaysAloneLetsAPillarAddOnlyOptionalEntriesToAnotherPillarsTag() throws IOException {
+        Files.writeString(module.resolve("gradle.properties"), Files.readString(module.resolve("gradle.properties")).replace("mod_id = beltworks", "mod_id = atouchofwickedness"));
+        buildScript("");
+        write("src/main/resources/data/atouchofmadness/tags/entity_type/unsettling.json",
+                "{\"replace\": false, \"values\": [{\"id\": \"atouchofwickedness:bailiff\", \"required\": false}]}\n");
+        build("checkPlaysAlone");
+        write("src/main/resources/data/atouchofmadness/tags/entity_type/unsettling.json", "{\"values\": [\"atouchofwickedness:bailiff\"]}\n");
+        String out = fail("checkPlaysAlone").getOutput();
+        assertTrue(out.contains("  build/resources/main/data/atouchofmadness/tags/entity_type/unsettling.json requires atouchofwickedness:bailiff\n"), out);
     }
 
     @Test
