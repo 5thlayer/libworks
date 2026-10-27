@@ -104,6 +104,39 @@ class PlaysAloneTest {
     }
 
     @Test
+    void aTagInASubfolderOfItsRegistryIsATag(@TempDir Path resources) throws IOException {
+        write(resources.resolve("data/atouchofmadness/tags/entity_type/sub/x.json"),
+                "{\"values\": [{\"id\": \"atouchofwickedness:bailiff\", \"required\": false}]}");
+        assertEquals(List.of(), wicked.otherTags(resources));
+    }
+
+    @Test
+    void aFileThatIsNoTagOrHasAMalformedFieldSaysWhy(@TempDir Path resources) throws IOException {
+        Path tags = resources.resolve("data/atouchofmadness/tags/entity_type");
+        write(tags.resolve("a.json"), "{\"values\": [");
+        write(tags.resolve("b.json"), "");
+        write(tags.resolve("c.json"), "{}");
+        write(tags.resolve("d.json"), "{\"replace\": \"false\", \"values\": []}");
+        write(tags.resolve("e.json"), "{\"remove\": [\"atouchofmadness:x\"]}");
+        write(tags.resolve("f.json"), "{\"values\": [{\"required\": false}, {\"id\": null, \"required\": false}, {\"id\": 3, \"required\": false}]}");
+        assertEquals(List.of("data/atouchofmadness/tags/entity_type/a.json is not valid JSON",
+                "data/atouchofmadness/tags/entity_type/b.json is not valid JSON",
+                "data/atouchofmadness/tags/entity_type/c.json is not a tag",
+                "data/atouchofmadness/tags/entity_type/d.json sets replace to \"false\", not a boolean",
+                "data/atouchofmadness/tags/entity_type/e.json removes from the tag",
+                "data/atouchofmadness/tags/entity_type/f.json has an entry with no id",
+                "data/atouchofmadness/tags/entity_type/f.json has an entry with no id",
+                "data/atouchofmadness/tags/entity_type/f.json has an entry with no id"), wicked.otherTags(resources));
+    }
+
+    @Test
+    void anOptionalEntryOfAnotherPillarsIdIsReportedOnce(@TempDir Path resources) throws IOException {
+        write(resources.resolve("data/atouchofmadness/tags/entity_type/x.json"),
+                "{\"values\": [{\"id\": \"atouchofdarkness:shade\", \"required\": false}]}");
+        assertEquals(List.of("data/atouchofmadness/tags/entity_type/x.json names atouchofdarkness:shade"), wicked.resources(resources));
+    }
+
+    @Test
     void anotherPillarsAssetsOrDataOutsideItsTagsAreReported(@TempDir Path resources) throws IOException {
         write(resources.resolve("data/atouchofmadness/tags/entity_type/unsettling.json"),
                 "{\"values\": [{\"id\": \"atouchofwickedness:bailiff\", \"required\": false}]}");

@@ -3,8 +3,6 @@
 
 package io.github._5thlayer.libworks.plugin
 
-import groovy.json.JsonSlurper
-
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
@@ -18,9 +16,17 @@ import java.util.zip.GZIPInputStream
  */
 final class PlaysAlone {
 
+    /** What a suite lets a Module ship in another Module's tags (ADR 0014). */
+    static enum OtherModulesTags {
+        /** Nothing: another Module's data folder is forbidden whole. */
+        NONE,
+        /** A tag of optional entries of the Module's own ids, which keeps the tag's other entries. */
+        OPTIONAL_ENTRIES
+    }
+
     /**
      * One suite: what it calls its Modules, the ADR that has them play alone, its Modules, the base among them that every one may require,
-     * the retired ids none may name, and whether a Module may add optional entries to another Module's tags (ADR 0014).
+     * the retired ids none may name, and what a Module may ship in another Module's tags (ADR 0014).
      */
     static final class Suite {
         final String term
@@ -28,15 +34,15 @@ final class PlaysAlone {
         final String base
         final List<String> modules
         final List<String> retired
-        final boolean optionalTagEntries
+        final OtherModulesTags otherModulesTags
 
-        Suite(String term, String rule, String base, List<String> modules, List<String> retired, boolean optionalTagEntries = false) {
+        Suite(String term, String rule, String base, List<String> modules, List<String> retired, OtherModulesTags otherModulesTags) {
             this.term = term
             this.rule = rule
             this.base = base
             this.modules = modules
             this.retired = retired
-            this.optionalTagEntries = optionalTagEntries
+            this.otherModulesTags = otherModulesTags
         }
 
         /** Every Module but {@code modId} and the base, and the retired ids. */
@@ -46,7 +52,7 @@ final class PlaysAlone {
 
         /** Whether {@code modId} may add optional entries to {@code namespace}'s tags: another Module of this suite, the base never adding (ADR 0014). */
         boolean takesOptionalTagEntries(String modId, String namespace) {
-            optionalTagEntries && modId != base && namespace in modules
+            otherModulesTags == OtherModulesTags.OPTIONAL_ENTRIES && modId != base && namespace in modules
         }
 
         /** Every Module, the base included, and the retired ids: what a Module of another suite may not name. */
@@ -62,9 +68,9 @@ final class PlaysAlone {
      */
     static final List<Suite> SUITES = [
             new Suite('Module', 'FactoryWorks ADR-0127', 'groundworks',
-                    ['beltworks', 'craftworks', 'fieldworks', 'gearworks', 'groundworks', 'pipeworks', 'voidworks', 'wireworks'], ['factoryworks']),
+                    ['beltworks', 'craftworks', 'fieldworks', 'gearworks', 'groundworks', 'pipeworks', 'voidworks', 'wireworks'], ['factoryworks'], OtherModulesTags.NONE),
             new Suite('Pillar', 'A Touch Of ADR-0002', 'atouchof',
-                    ['atouchof', 'atouchofdarkness', 'atouchofmadness', 'atouchofwickedness'], ['atouchofcold'], /* optionalTagEntries */ true),
+                    ['atouchof', 'atouchofdarkness', 'atouchofmadness', 'atouchofwickedness'], ['atouchofcold'], OtherModulesTags.OPTIONAL_ENTRIES),
     ]
 
     private static final Pattern DEPENDENCY_MOD_ID = ~/(?m)^\s*modId\s*=\s*"([^"]+)"/
@@ -145,29 +151,7 @@ final class PlaysAlone {
     }
 
     private List<String> tagFindings(Path resources, Path namespace) {
-        def tags = namespace.resolve('tags')
-        files(namespace).collectMany { file ->
-            def name = relative(resources, file)
-            if (!file.startsWith(tags)) return ["$name is outside tags/".toString()]
-            def tag = null
-            try {
-                if (file.toString().endsWith('.json')) tag = new JsonSlurper().parse(file.toFile())
-            } catch (ignored) {
-            }
-            // A tag file sits in its registry's folder, tags/<registry>/; vanilla reads none directly under tags/ (ADR 0014).
-            if (file.parent == tags || !(tag instanceof Map) || !(tag.values instanceof List)) return ["$name is not a tag".toString()]
-            def found = []
-            if (tag.replace) found << "$name replaces the tag".toString()
-            // NeoForge reads a tag's "remove" list too, which would take entries out of the other Module's tag (ADR 0014).
-            if (tag.containsKey('remove')) found << "$name removes from the tag".toString()
-            tag.values.each { entry ->
-                // A bare id, or an entry with no "required", is required: the tag fails to load without it (ADR 0014).
-                def id = entry instanceof Map ? entry.id : entry
-                if (!(entry instanceof Map) || entry.required != false) found << "$name requires $id".toString()
-                else if (!(id instanceof String) || !(id - ~/^#/).startsWith("$modId:")) found << "$name adds $id, not $modId's own".toString()
-            }
-            found
-        }
+        files(namespace).collectMany { OptionalTagFile.findings(namespace, it, relative(resources, it), modId, forbidden) }
     }
 
     /** Each string in the Java source under {@code code} that is a forbidden namespace, as an id built in code names it. */
