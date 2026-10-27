@@ -32,3 +32,7 @@ template's own build would need an exception.
 **Amended 2026-10-25 (plugin 0.4.4).** Plugin 0.4.3 checked a Module only against its own suite, so a Pillar
 could name any FactoryWorks Module and a FactoryWorks Module any Pillar, which neither suite's rule
 allows. 0.4.4 adds every other suite's Modules, bases included, as above.
+
+**Amended 2026-10-27 (plugin 0.4.5, ADR 0014).** A Touch Of's Pillars are `atouchofdarkness`, `atouchofmadness` and
+`atouchofwickedness` (A Touch Of #6). `atouchofcold` is shelved in favour of Tough As Nails (A Touch Of #5) and
+retired, so none may name it. A Pillar may add optional entries to another Pillar's tag (ADR 0014).

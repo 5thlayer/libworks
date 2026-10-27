@@ -18,21 +18,24 @@ import org.junit.jupiter.api.io.TempDir;
 /** Each rule of the plays-alone scan, on files written for it: Beltworks is the Module scanned unless a test names another. */
 class PlaysAloneTest {
     private final PlaysAlone belt = new PlaysAlone("beltworks");
+    private final PlaysAlone wicked = new PlaysAlone("atouchofwickedness");
 
     @Test
     void forbidsEveryModuleButItselfAndGroundworksAndTheRetiredPackAndEveryPillar() {
-        assertEquals(List.of("atouchof", "atouchofcold", "atouchofdarkness", "atouchofmadness", "craftworks", "factoryworks", "fieldworks",
-                "gearworks", "pipeworks", "voidworks", "wireworks"), belt.getForbidden());
-        assertEquals(List.of("atouchof", "atouchofcold", "atouchofdarkness", "atouchofmadness", "beltworks", "craftworks", "factoryworks",
-                "fieldworks", "gearworks", "pipeworks", "voidworks", "wireworks"), new PlaysAlone("groundworks").getForbidden());
+        assertEquals(List.of("atouchof", "atouchofcold", "atouchofdarkness", "atouchofmadness", "atouchofwickedness", "craftworks", "factoryworks",
+                "fieldworks", "gearworks", "pipeworks", "voidworks", "wireworks"), belt.getForbidden());
+        assertEquals(List.of("atouchof", "atouchofcold", "atouchofdarkness", "atouchofmadness", "atouchofwickedness", "beltworks", "craftworks",
+                "factoryworks", "fieldworks", "gearworks", "pipeworks", "voidworks", "wireworks"), new PlaysAlone("groundworks").getForbidden());
     }
 
     @Test
-    void aPillarForbidsTheOtherPillarsAndEveryFactoryWorksModuleGroundworksIncluded() {
-        assertEquals(List.of("atouchofcold", "atouchofmadness", "beltworks", "craftworks", "factoryworks", "fieldworks", "gearworks",
-                "groundworks", "pipeworks", "voidworks", "wireworks"), new PlaysAlone("atouchofdarkness").getForbidden());
+    void aPillarForbidsTheOtherPillarsTheShelvedColdAndEveryFactoryWorksModuleGroundworksIncluded() {
+        assertEquals(List.of("atouchofcold", "atouchofmadness", "atouchofwickedness", "beltworks", "craftworks", "factoryworks", "fieldworks",
+                "gearworks", "groundworks", "pipeworks", "voidworks", "wireworks"), new PlaysAlone("atouchofdarkness").getForbidden());
         assertEquals(List.of("atouchofcold", "atouchofdarkness", "atouchofmadness", "beltworks", "craftworks", "factoryworks", "fieldworks",
-                "gearworks", "groundworks", "pipeworks", "voidworks", "wireworks"), new PlaysAlone("atouchof").getForbidden());
+                "gearworks", "groundworks", "pipeworks", "voidworks", "wireworks"), new PlaysAlone("atouchofwickedness").getForbidden());
+        assertEquals(List.of("atouchofcold", "atouchofdarkness", "atouchofmadness", "atouchofwickedness", "beltworks", "craftworks", "factoryworks",
+                "fieldworks", "gearworks", "groundworks", "pipeworks", "voidworks", "wireworks"), new PlaysAlone("atouchof").getForbidden());
     }
 
     @Test
@@ -52,8 +55,8 @@ class PlaysAloneTest {
 
     @Test
     void aModNoSuiteListsForbidsEverySuitesModulesButTheirBases() {
-        assertEquals(List.of("atouchofcold", "atouchofdarkness", "atouchofmadness", "beltworks", "craftworks", "factoryworks", "fieldworks",
-                "gearworks", "pipeworks", "voidworks", "wireworks"), new PlaysAlone("examplelib").getForbidden());
+        assertEquals(List.of("atouchofcold", "atouchofdarkness", "atouchofmadness", "atouchofwickedness", "beltworks", "craftworks", "factoryworks",
+                "fieldworks", "gearworks", "pipeworks", "voidworks", "wireworks"), new PlaysAlone("examplelib").getForbidden());
     }
 
     @Test
@@ -63,6 +66,52 @@ class PlaysAloneTest {
         write(resources.resolve("data/beltworks/recipe/x.json"), "{}");
         write(resources.resolve("data/groundworks/tags/item/dismantles.json"), "{}");
         assertEquals(List.of("assets/voidworks", "data/fieldworks"), belt.namespaces(resources));
+    }
+
+    @Test
+    void aPillarMayAddItsOwnOptionalEntriesToAnotherPillarsTag(@TempDir Path resources) throws IOException {
+        write(resources.resolve("data/atouchofmadness/tags/entity_type/unsettling.json"),
+                "{\"replace\": false, \"values\": [{\"id\": \"atouchofwickedness:bailiff\", \"required\": false}]}");
+        write(resources.resolve("data/atouchofdarkness/tags/item/x.json"), "{\"values\": [{\"id\": \"#atouchofwickedness:seals\", \"required\": false}]}");
+        assertEquals(List.of(), wicked.namespaces(resources));
+    }
+
+    @Test
+    void anOptionalTagFileThatRequiresReplacesOrAddsAnotherIdIsReported(@TempDir Path resources) throws IOException {
+        write(resources.resolve("data/atouchofmadness/tags/entity_type/a.json"), "{\"values\": [\"atouchofwickedness:bailiff\"]}");
+        write(resources.resolve("data/atouchofmadness/tags/entity_type/b.json"), "{\"values\": [{\"id\": \"atouchofwickedness:bailiff\"}]}");
+        write(resources.resolve("data/atouchofmadness/tags/entity_type/c.json"),
+                "{\"values\": [{\"id\": \"atouchofwickedness:bailiff\", \"required\": true}]}");
+        write(resources.resolve("data/atouchofmadness/tags/entity_type/d.json"),
+                "{\"replace\": true, \"values\": [{\"id\": \"atouchofwickedness:bailiff\", \"required\": false}]}");
+        write(resources.resolve("data/atouchofmadness/tags/entity_type/e.json"), "{\"values\": [{\"id\": \"minecraft:zombie\", \"required\": false}]}");
+        write(resources.resolve("data/atouchofmadness/tags/entity_type/f.json"), "[]");
+        assertEquals(List.of("data/atouchofmadness/tags/entity_type/a.json requires atouchofwickedness:bailiff",
+                "data/atouchofmadness/tags/entity_type/b.json requires atouchofwickedness:bailiff",
+                "data/atouchofmadness/tags/entity_type/c.json requires atouchofwickedness:bailiff",
+                "data/atouchofmadness/tags/entity_type/d.json replaces the tag",
+                "data/atouchofmadness/tags/entity_type/e.json adds minecraft:zombie, not atouchofwickedness's own",
+                "data/atouchofmadness/tags/entity_type/f.json is not a tag"), wicked.namespaces(resources));
+    }
+
+    @Test
+    void anotherPillarsDataOutsideItsTagsOrAssetsAreReported(@TempDir Path resources) throws IOException {
+        write(resources.resolve("data/atouchofmadness/tags/entity_type/unsettling.json"),
+                "{\"values\": [{\"id\": \"atouchofwickedness:bailiff\", \"required\": false}]}");
+        write(resources.resolve("data/atouchofmadness/recipe/x.json"), "{}");
+        write(resources.resolve("assets/atouchofmadness/lang/en_us.json"), "{}");
+        assertEquals(List.of("assets/atouchofmadness", "data/atouchofmadness/recipe/x.json"), wicked.namespaces(resources));
+    }
+
+    @Test
+    void optionalTagEntriesAreNoExceptionForTheShelvedColdAnotherSuiteOrFactoryWorks(@TempDir Path resources) throws IOException {
+        String optional = "{\"values\": [{\"id\": \"%s:x\", \"required\": false}]}";
+        write(resources.resolve("data/atouchofcold/tags/item/x.json"), optional.formatted("atouchofwickedness"));
+        write(resources.resolve("data/pipeworks/tags/item/x.json"), optional.formatted("atouchofwickedness"));
+        assertEquals(List.of("data/atouchofcold", "data/pipeworks"), wicked.namespaces(resources));
+        write(resources.resolve("data/fieldworks/tags/item/x.json"), optional.formatted("beltworks"));
+        write(resources.resolve("data/atouchofmadness/tags/item/x.json"), optional.formatted("beltworks"));
+        assertEquals(List.of("data/atouchofcold", "data/atouchofmadness", "data/fieldworks", "data/pipeworks"), belt.namespaces(resources));
     }
 
     @Test
