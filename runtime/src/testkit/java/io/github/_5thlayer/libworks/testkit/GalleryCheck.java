@@ -110,7 +110,7 @@ public final class GalleryCheck {
         }
 
         /** The plot of a scene run from {@code at}, its floor and its reach past either end included. */
-        public BoundingBox at(BlockPos at) {
+        public BoundingBox plotAt(BlockPos at) {
             return new BoundingBox(at.getX() + FIRST_PLOT_EAST - reachWest, at.getY() - 1, at.getZ() - depth + 1,
                     at.getX() + FIRST_PLOT_EAST + width - 1 + reachEast, at.getY() + PLOT_HEIGHT - 1, at.getZ());
         }
@@ -152,7 +152,7 @@ public final class GalleryCheck {
 
         /** The plot of a scene run from {@code at}, its floor and its reach included. */
         public BoundingBox plot(BlockPos at) {
-            return size.at(at);
+            return size.plotAt(at);
         }
 
         /** The area the first {@code plots} plots of a gallery run from {@code origin} cover, their floors and reach included. */
@@ -247,8 +247,8 @@ public final class GalleryCheck {
     /**
      * Asserts {@code <modid>:gallery/clear}, run as {@code source}, empties {@code plot}, absolute,
      * the plot of a scene run from where {@code source} stands: with every block of it, its floor
-     * too, set to glass, which is neither a floor nor air and drops nothing when broken, the function runs without failing and leaves {@code floor}
-     * across the plot's bottom layer and air above it. A block left anywhere fails it, named with how
+     * too, set to glass, which is neither a floor nor air and drops nothing when broken, the function
+     * runs without failing and leaves {@code floor} across the plot's bottom layer and air above it. A block left anywhere fails it, named with how
      * many more there are.
      */
     public static void assertClears(GameTestHelper helper, CommandSourceStack source, String modId, BoundingBox plot, Block floor) {
@@ -339,7 +339,7 @@ public final class GalleryCheck {
 
     /** The {@link PlotSize#DEFAULT} plot of a scene run from {@code at}, its floor included. */
     public static BoundingBox plot(BlockPos at) {
-        return PlotSize.DEFAULT.at(at);
+        return PlotSize.DEFAULT.plotAt(at);
     }
 
     /** Every plot of a gallery of {@code scenes} run from {@code origin}, their floors included. */

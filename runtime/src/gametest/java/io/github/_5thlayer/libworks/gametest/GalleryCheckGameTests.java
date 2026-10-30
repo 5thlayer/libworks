@@ -78,7 +78,7 @@ public final class GalleryCheckGameTests {
             new Scene("gold", new BlockPos(33, 0, -14), Blocks.GOLD_BLOCK),
             new Scene("iron", new BlockPos(33, 0, -14), Blocks.IRON_BLOCK),
             new Scene("diamond", new BlockPos(33, 0, -14), Blocks.DIAMOND_BLOCK));
-    /** The short clear's namespace, whose {@code gallery/clear} leaves the wide plot's reach east, two blocks of 17 by 15. */
+    /** The short clear's namespace, whose {@code gallery/clear} leaves the wide plot's reach east: two columns, each 17 high and 15 deep. */
     private static final String SHORT = "gallery_short";
     /** Where the rows fixture's {@code gallery/clear} leaves its mark, from where a scene is run: under the floor. */
     private static final BlockPos CLEAR_MARK = new BlockPos(13, -2, -6);

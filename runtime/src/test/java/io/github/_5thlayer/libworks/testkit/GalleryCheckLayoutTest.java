@@ -127,7 +127,7 @@ class GalleryCheckLayoutTest {
 
     @Test
     void aPlotReachesWestNoFurtherThanTheOriginsColumn() {
-        assertEquals(ORIGIN.getX() + 1, new PlotSize(24, 13, GalleryCheck.FIRST_PLOT_EAST - 1, 0).at(ORIGIN).minX());
+        assertEquals(ORIGIN.getX() + 1, new PlotSize(24, 13, GalleryCheck.FIRST_PLOT_EAST - 1, 0).plotAt(ORIGIN).minX());
         assertThrows(IllegalArgumentException.class, () -> new PlotSize(24, 13, GalleryCheck.FIRST_PLOT_EAST, 0));
     }
 
