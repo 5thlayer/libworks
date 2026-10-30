@@ -1,0 +1,7 @@
+{
+  "pack": {
+    "description": "libworks GalleryCheck fixture: a gallery/clear that leaves its plot's reach east behind",
+    "min_format": [101, 1],
+    "max_format": [101, 1]
+  }
+}

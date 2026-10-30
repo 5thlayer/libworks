@@ -16,6 +16,7 @@ import io.github._5thlayer.libworks.Libworks;
 import io.github._5thlayer.libworks.gallery.GalleryPack;
 import io.github._5thlayer.libworks.testkit.GalleryCheck;
 import io.github._5thlayer.libworks.testkit.GalleryCheck.Layout;
+import io.github._5thlayer.libworks.testkit.GalleryCheck.PlotSize;
 import io.github._5thlayer.libworks.testkit.GalleryCheck.Scene;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
@@ -50,7 +51,9 @@ import net.neoforged.neoforge.resource.JarContentsPackResources;
  * too, and on the fixtures in {@code gametest_packs/gallery_fixture/}: a pack on by default, a build
  * whose command fails, and a scene placing a block that does not exist. {@code gametest_packs/gallery_rows/}
  * is a gallery laid in rows, offered as a Gallery pack would be, whose {@code gallery/clear} marks
- * each plot it runs on.
+ * each plot it runs on. {@code gametest_packs/gallery_wide/} is a gallery of plots wider and deeper
+ * than the default, reaching past their ends, and {@code gametest_packs/gallery_short/} a
+ * {@code gallery/clear} for them that leaves their reach east behind.
  */
 @EventBusSubscriber(modid = Libworks.MOD_ID)
 public final class GalleryCheckGameTests {
@@ -67,6 +70,16 @@ public final class GalleryCheckGameTests {
             new Scene("gold", new BlockPos(13, 0, -6), Blocks.GOLD_BLOCK),
             new Scene("iron", new BlockPos(13, 0, -6), Blocks.IRON_BLOCK),
             new Scene("diamond", new BlockPos(13, 0, -6), Blocks.DIAMOND_BLOCK));
+    /** The wide fixture's namespace and its plots: 30 by 15, reaching a block west and two east. */
+    private static final String WIDE = "gallery_wide";
+    private static final Layout WIDE_ROWS = new Layout(2, 16, new PlotSize(30, 15, 1, 2));
+    /** Each key in the far corner of its plot's reach east, outside a default plot. */
+    private static final List<Scene> WIDE_SCENES = List.of(
+            new Scene("gold", new BlockPos(33, 0, -14), Blocks.GOLD_BLOCK),
+            new Scene("iron", new BlockPos(33, 0, -14), Blocks.IRON_BLOCK),
+            new Scene("diamond", new BlockPos(33, 0, -14), Blocks.DIAMOND_BLOCK));
+    /** The short clear's namespace, whose {@code gallery/clear} leaves the wide plot's reach east, two blocks of 17 by 15. */
+    private static final String SHORT = "gallery_short";
     /** Where the rows fixture's {@code gallery/clear} leaves its mark, from where a scene is run: under the floor. */
     private static final BlockPos CLEAR_MARK = new BlockPos(13, -2, -6);
     /** How long the wrapper's test idles after building, before the wrapper clears away. */
@@ -100,10 +113,12 @@ public final class GalleryCheckGameTests {
         if (event.getPackType() == PackType.SERVER_DATA) {
             // Under GalleryPack's id for a Module named after the fixture, off by default, as GalleryPack offers one.
             var contents = ModList.get().getModFileById(Libworks.MOD_ID).getFile().getContents();
-            event.addRepositorySource(packs -> packs.accept(Pack.readMetaAndCreate(
-                    new PackLocationInfo(GalleryPack.id(ROWS), Component.literal(ROWS), PackSource.create(PackSource.BUILT_IN::decorate, false), Optional.empty()),
-                    new JarContentsPackResources.JarContentsResourcesSupplier(contents, "gametest_packs/" + ROWS),
-                    PackType.SERVER_DATA, new PackSelectionConfig(false, Pack.Position.TOP, false))));
+            for (var fixture : List.of(ROWS, WIDE, SHORT)) {
+                event.addRepositorySource(packs -> packs.accept(Pack.readMetaAndCreate(
+                        new PackLocationInfo(GalleryPack.id(fixture), Component.literal(fixture), PackSource.create(PackSource.BUILT_IN::decorate, false), Optional.empty()),
+                        new JarContentsPackResources.JarContentsResourcesSupplier(contents, "gametest_packs/" + fixture),
+                        PackType.SERVER_DATA, new PackSelectionConfig(false, Pack.Position.TOP, false))));
+            }
         }
     }
 
@@ -120,6 +135,12 @@ public final class GalleryCheckGameTests {
                 helper -> GalleryCheck.builds(helper, Libworks.MOD_ID, ORIGIN, SAMPLE));
         register(event, onItsOwn(event, "rows"), "gallery_check_passes_on_a_gallery_in_rows", GalleryCheck.TICKS,
                 helper -> GalleryCheck.builds(helper, ROWS, ORIGIN, TWO_A_ROW, ROWS_SCENES));
+        register(event, onItsOwn(event, "wide"), "gallery_check_passes_on_a_gallery_of_wide_plots", GalleryCheck.TICKS,
+                helper -> GalleryCheck.builds(helper, WIDE, ORIGIN, WIDE_ROWS, WIDE_SCENES));
+        register(event, onItsOwn(event, "clears"), "gallery_check_clears_proves_gallery_clear_empties_a_wide_plot", GalleryCheck.TICKS,
+                helper -> GalleryCheck.clears(helper, WIDE, ORIGIN, WIDE_ROWS));
+        register(event, onItsOwn(event, "short_clear"), "gallery_check_fails_on_a_clear_that_leaves_its_reach_then_clears_it_away", GalleryCheck.TICKS,
+                GalleryCheckGameTests::shortClearFailsThenClearsAway);
         register(event, onItsOwn(event, "with_pack"), "gallery_check_with_pack_waits_then_clears_away", GalleryCheck.TICKS, GalleryCheckGameTests::withPackClearsAway);
         register(event, fixtures, "gallery_check_fails_on_a_missing_pack", 1,
                 helper -> fails(helper, () -> GalleryCheck.assertOfferedAndOff(helper, GalleryPack.id("no_such_mod")), "does not offer"));
@@ -193,6 +214,33 @@ public final class GalleryCheckGameTests {
                 helper.assertTrue(level.getBlockState(key).isAir(), "plot " + plot + " was not cleared: " + level.getBlockState(key));
             }
             helper.assertFalse(level.getServer().getPackRepository().getSelectedIds().contains(GalleryPack.id(ROWS)), "the pack is still on");
+        }).thenSucceed();
+    }
+
+    /**
+     * The short clear through {@link GalleryCheck#assertClears} fails, counting the blocks it left in
+     * the wide plot's reach east; and {@link GalleryCheck#withPack} still clears away every wide plot,
+     * the blocks it left and those set in the other plots' far corners, past a default plot, with them.
+     */
+    private static void shortClearFailsThenClearsAway(GameTestHelper helper) {
+        var level = helper.getLevel();
+        var at = helper.absolutePos(ORIGIN);
+        int plots = WIDE_SCENES.size();
+        GalleryCheck.withPack(helper, SHORT, ORIGIN, WIDE_ROWS, plots, (source, steps) -> steps.thenExecute(() -> {
+            failsSaying(helper, () -> GalleryCheck.assertClears(helper, source, SHORT, WIDE_ROWS.plot(at), Blocks.STONE),
+                    SHORT + ":gallery/clear left Block{minecraft:glass} at " + at.offset(32, -1, -14).toShortString() + ", not Block{minecraft:stone} and 509 more");
+            for (int plot = 1; plot < plots; plot++) {
+                var box = WIDE_ROWS.plot(WIDE_ROWS.sceneOrigin(at, plot));
+                level.setBlockAndUpdate(new BlockPos(box.minX(), box.maxY(), box.minZ()), Blocks.GLASS.defaultBlockState());
+                level.setBlockAndUpdate(new BlockPos(box.maxX(), box.minY(), box.minZ()), Blocks.GLASS.defaultBlockState());
+            }
+        })).thenExecute(() -> {
+            for (int plot = 0; plot < plots; plot++) {
+                var box = WIDE_ROWS.plot(WIDE_ROWS.sceneOrigin(at, plot));
+                for (var pos : BlockPos.betweenClosed(box.minX(), box.minY(), box.minZ(), box.maxX(), box.maxY(), box.maxZ())) {
+                    helper.assertTrue(level.getBlockState(pos).isAir(), "plot " + plot + " was not cleared away at " + pos.toShortString() + ": " + level.getBlockState(pos));
+                }
+            }
         }).thenSucceed();
     }
 

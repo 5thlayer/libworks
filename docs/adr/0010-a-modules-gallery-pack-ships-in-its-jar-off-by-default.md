@@ -46,3 +46,5 @@ reaches a player who installs it alone.
 - The gallery is built beside the test's structure, not in it, so the structure does not bound it. The
   check force-loads and clears the plots, at most `GalleryCheck.MAX_SCENES` of them, a bound on the
   area it loads, raised as a gallery outgrows it.
+- A Module whose scenes need more room than a 24 by 13 plot declares its plots' size, and proves
+  its `gallery/clear` empties them with a test of its own (ADR 0015).

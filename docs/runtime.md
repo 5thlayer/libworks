@@ -30,7 +30,7 @@ dependencies {
 }
 ```
 
-A Module that uses `libworks.machine` needs 0.1.2 or later, one that calls `fluidTooltip` with a title 0.1.4 or later, one that uses `FluidContainers` 0.1.5 or later, one that uses `GhostScreen` 0.1.6 or later, one that overrides its `ghostAt` 0.1.7 or later, one that runs `WorksTabCheck` from libworks-gametest 0.1.8 or later, one with a Gallery pack 0.1.9 or later, one whose gallery test passes a `GalleryCheck.Layout` or calls `withPack` 0.1.10 or later, one whose gallery has more than 12 scenes 0.1.11 or later, and one with more than 16 0.1.12 or later, so its range starts there. The range is what makes two Modules nesting different patches load one copy: FML keeps the highest version in range. A breaking change bumps the minor, which leaves the range, as ADR 0001 sets for every version here.
+A Module that uses `libworks.machine` needs 0.1.2 or later, one that calls `fluidTooltip` with a title 0.1.4 or later, one that uses `FluidContainers` 0.1.5 or later, one that uses `GhostScreen` 0.1.6 or later, one that overrides its `ghostAt` 0.1.7 or later, one that runs `WorksTabCheck` from libworks-gametest 0.1.8 or later, one with a Gallery pack 0.1.9 or later, one whose gallery test passes a `GalleryCheck.Layout` or calls `withPack` 0.1.10 or later, one whose gallery has more than 12 scenes 0.1.11 or later, one with more than 16 0.1.12 or later, and one that declares its plots' size or calls `GalleryCheck.clears` 0.1.13 or later, so its range starts there. The range is what makes two Modules nesting different patches load one copy: FML keeps the highest version in range. A breaking change bumps the minor, which leaves the range, as ADR 0001 sets for every version here.
 
 A modpack pins the Module's jar, which carries the nested jar; nothing else is installed.
 
@@ -81,7 +81,7 @@ It shows in the Data Packs screen as `<modid>.gallery.pack` from the Module's la
 Every Module's gallery is laid out alike, so a player who has walked one knows the rest:
 
 - `<modid>:gallery/build` runs each scene in README order, the first where the player stands and each further one 24 blocks east of the last: `execute positioned ~24 ~ ~ run function <modid>:gallery/<scene>`. A scene runs on its own from where the player stands, too.
-- A scene builds in its plot alone: from `~2` to `~25` east, from the sign's row at `~0` to `~-12` north, 16 high above a stone floor at `~-1`. It clears the plot first, filling it with `structure_void`, then the stone floor, then `air`, since a `fill` that changes nothing fails.
+- A scene builds in its plot alone: from `~2` to `~25` east, from the sign's row at `~0` to `~-12` north, 16 high above a stone floor at `~-1`, unless its Module declares another size (below). It clears the plot first, filling it with `structure_void`, then the stone floor, then `air`, since a `fill` that changes nothing fails.
 - Its sign stands at the plot's south front, `~13 ~ ~`, as `oak_sign[rotation=0]` with `is_waxed:1b`. Its lines are translation keys, `<modid>.gallery.<scene>` for the feature's name and `<modid>.gallery.<scene>.<n>` for what it shows, in the Module's lang file. A scene of a gesture shows its result, and its sign says how to make it.
 - A scene is built working, from the Module, vanilla and the Modules it requires: power, fuel, items and fluid in place. It changes blocks, their contents, and the Module's own records for what it places; never time, weather, game rules or players.
 - `<modid>:gallery/clear`, which a pack may leave out, clears one scene's plot from where the scene runs, removing what it placed as a player's world would: entities first, then the Module's blocks, so its records of them go too. The game tests run it on each plot before clearing the plots themselves, which sets blocks with no removal and would leave those records for the next test's scene to find.
@@ -109,6 +109,21 @@ A gallery whose build lays its scenes in rows, so the far ones stay within simul
 GalleryCheck.builds(helper, MyMod.MOD_ID, new BlockPos(0, 1, 8), new GalleryCheck.Layout(3, 16), scenes);
 ```
 
+A Module whose scenes need more room declares its plots' size in the `Layout`, `GalleryCheck.PlotSize(width, depth, reachWest, reachEast)` (ADR 0015): `width` east from `~2`, `depth` north from `~0`, and how far past the plot's west and east ends the scene reaches too, such as space its lines keep clear, which its `gallery/clear` clears with the plot. The reach is part of the plot: the key blocks, the plots force-loaded and the plots cleared cover it. A row's plots are `size.spacing()`, `width + reachWest + reachEast`, apart, so no reach lies over the next plot, and rows at least `depth` apart. The reach west is at most 1, stopping east of the column the scene runs from. `PlotSize.DEFAULT` is 24 by 13 with no reach, what a `Layout` without one takes; `Layout.oneRow(size)` lays every scene in one row.
+
+```java
+// Railworks: plots 40 by 15, cleared from ~1 to ~43; one scene a row, each row 16 north of the last
+static final GalleryCheck.Layout ROWS = new GalleryCheck.Layout(1, 16, new GalleryCheck.PlotSize(40, 15, 1, 2));
+```
+
+A Module whose pack has `<modid>:gallery/clear` proves it empties the declared plot with `GalleryCheck.clears`, in a test of its own, in a batch of its own as `builds` is. It fills the first plot, its floor too, with glass, runs `clear` from where the scene runs, and fails unless the function runs without failing and leaves stone, or the `floor` given, across the plot's bottom layer and air above it, naming the first block left and how many more. `assertClears(helper, source, modId, plot, floor)` is the same check for a test already in `withPack`. `builds` does not run it, since not every plot stands on stone (ADR 0015).
+
+```java
+tests.testOnItsOwn("gallery_clear_empties_its_plot", GalleryCheck.TICKS,
+        helper -> GalleryCheck.clears(helper, MyMod.MOD_ID, new BlockPos(0, 1, 8), ROWS));
+// a plot on smooth stone: GalleryCheck.clears(helper, MyMod.MOD_ID, origin, ROWS, Blocks.SMOOTH_STONE)
+```
+
 A test of the Module's own that needs the pack, such as a scene doing its work over time or a sign replaying its scene, runs in `withPack`, the same frame `builds` runs its checks in. It turns the pack on over the gallery's first `plots` plots and loads them; adds the test's own steps to the sequence, given an operator player's source standing at `origin` to build from; then runs `gallery/clear` on each plot when the pack has one, clears the plots and turns the pack off, passing or failing. It returns the test's sequence once the pack is off, which the test ends, so it can check what clearing left too. It turns the pack on, so it is registered in a batch of its own as `builds` is:
 
 ```java
@@ -118,7 +133,7 @@ GalleryCheck.withPack(helper, MyMod.MOD_ID, new BlockPos(0, 1, 8), new GalleryCh
         .thenSucceed();
 ```
 
-A scene run on its own from `origin` stands on the first plot. `assertRuns`, `assertKeyBlocks`, `select` and `operator` are there for checks of a Module's own.
+A scene run on its own from `origin` stands on the first plot. `assertRuns`, `assertKeyBlocks`, `select` and `operator` are there for checks of a Module's own, and `layout.plot(at)` is the plot of a scene run from `at`, absolute, its floor and reach included.
 
 libworks' own sample gallery, a furnace and a hopper, is in `runtime/src/gametest/resources/gallery_pack/`, and `sh ./gradlew :runtime:runClient` offers it.
 

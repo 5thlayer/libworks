@@ -1,0 +1,7 @@
+{
+  "pack": {
+    "description": "libworks GalleryCheck fixture: a gallery of plots 30 by 15, reaching a block west and two east",
+    "min_format": [101, 1],
+    "max_format": [101, 1]
+  }
+}

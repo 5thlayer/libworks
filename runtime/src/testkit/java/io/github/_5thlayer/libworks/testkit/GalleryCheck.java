@@ -38,6 +38,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.permissions.PermissionSet;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.common.util.FakePlayer;
@@ -53,9 +54,9 @@ import net.neoforged.neoforge.common.util.FakePlayer;
  */
 public final class GalleryCheck {
 
-    /** A scene's plot, along its row: from 2 blocks east of where it is run. */
+    /** A scene's plot unless its Module declares another size, along its row: from 2 blocks east of where it is run. */
     public static final int PLOT_WIDTH = 24;
-    /** A scene's plot, from its sign's row at the origin's z to 12 blocks north. */
+    /** A scene's plot unless its Module declares another size, from its sign's row at the origin's z to 12 blocks north. */
     public static final int PLOT_DEPTH = 13;
     /** A scene's plot, above its stone floor. */
     public static final int PLOT_HEIGHT = 16;
@@ -81,34 +82,84 @@ public final class GalleryCheck {
     }
 
     /**
-     * How a gallery lays its scenes, in the order {@code build} runs them: {@code perRow} plots a row,
-     * each a plot east of the last, and each row {@code rowDepth} blocks north of the one before. A
-     * row depth under {@link #PLOT_DEPTH} would lay a row's plots over the last's.
+     * The size of a scene's plot, {@link #PLOT_HEIGHT} high above its floor: {@code width} blocks along
+     * its row from {@link #FIRST_PLOT_EAST} east of where the scene is run, {@code depth} blocks from
+     * its sign's row at the origin's z north, and, past its west and east ends, the blocks the scene
+     * reaches too, such as space its lines keep clear, which {@code gallery/clear} clears with the plot.
+     * A row's plots are {@link #spacing} apart, so one plot's reach never lies over the next. The
+     * reach west stops at the origin's column, where the player stands.
      */
-    public record Layout(int perRow, int rowDepth) {
+    public record PlotSize(int width, int depth, int reachWest, int reachEast) {
+
+        /** 24 wide by 13 deep, reaching nowhere past its ends: every plot unless its Module declares another. */
+        public static final PlotSize DEFAULT = new PlotSize(PLOT_WIDTH, PLOT_DEPTH, 0, 0);
+
+        public PlotSize {
+            if (width < 1 || depth < 1) {
+                throw new IllegalArgumentException("a plot is at least 1 by 1, not " + width + " by " + depth);
+            }
+            if (reachWest < 0 || reachWest > FIRST_PLOT_EAST - 1 || reachEast < 0) {
+                throw new IllegalArgumentException("a plot reaches 0 to " + (FIRST_PLOT_EAST - 1) + " blocks west and 0 or more east, not "
+                        + reachWest + " west and " + reachEast + " east");
+            }
+        }
+
+        /** How far east of the last a row's next plot is: its width and its reach either way, so no two plots overlap. */
+        public int spacing() {
+            return width + reachWest + reachEast;
+        }
+
+        /** The plot of a scene run from {@code at}, its floor and its reach past either end included. */
+        public BoundingBox at(BlockPos at) {
+            return new BoundingBox(at.getX() + FIRST_PLOT_EAST - reachWest, at.getY() - 1, at.getZ() - depth + 1,
+                    at.getX() + FIRST_PLOT_EAST + width - 1 + reachEast, at.getY() + PLOT_HEIGHT - 1, at.getZ());
+        }
+    }
+
+    /**
+     * How a gallery lays its scenes, in the order {@code build} runs them: {@code perRow} plots a row,
+     * each {@code size.spacing()} east of the last, and each row {@code rowDepth} blocks north of the one
+     * before. A row depth under {@code size.depth()} would lay a row's plots over the last's.
+     */
+    public record Layout(int perRow, int rowDepth, PlotSize size) {
 
         /** Every scene a plot east of the last, in one row: the layout {@code build} follows unless a Module says otherwise. */
-        public static final Layout ONE_ROW = new Layout(MAX_SCENES, PLOT_DEPTH);
+        public static final Layout ONE_ROW = oneRow(PlotSize.DEFAULT);
 
         public Layout {
             if (perRow < 1) {
                 throw new IllegalArgumentException("a row holds at least one scene, not " + perRow);
             }
-            if (rowDepth < PLOT_DEPTH) {
-                throw new IllegalArgumentException("rows " + rowDepth + " blocks apart overlap, since a plot is " + PLOT_DEPTH + " deep");
+            if (rowDepth < size.depth()) {
+                throw new IllegalArgumentException("rows " + rowDepth + " blocks apart overlap, since a plot is " + size.depth() + " deep");
             }
+        }
+
+        /** Rows of {@link PlotSize#DEFAULT} plots. */
+        public Layout(int perRow, int rowDepth) {
+            this(perRow, rowDepth, PlotSize.DEFAULT);
+        }
+
+        /** Every scene a plot of {@code size} east of the last, in one row. */
+        public static Layout oneRow(PlotSize size) {
+            return new Layout(MAX_SCENES, size.depth(), size);
         }
 
         /** Where scene {@code index} of a gallery run from {@code origin} is run from. */
         public BlockPos sceneOrigin(BlockPos origin, int index) {
-            return origin.north(rowDepth * (index / perRow)).east(PLOT_WIDTH * (index % perRow));
+            return origin.north(rowDepth * (index / perRow)).east(size.spacing() * (index % perRow));
         }
 
-        /** The area the first {@code plots} plots of a gallery run from {@code origin} cover, their floors included. */
+        /** The plot of a scene run from {@code at}, its floor and its reach included. */
+        public BoundingBox plot(BlockPos at) {
+            return size.at(at);
+        }
+
+        /** The area the first {@code plots} plots of a gallery run from {@code origin} cover, their floors and reach included. */
         public BoundingBox area(BlockPos origin, int plots) {
             int lastRow = (plots - 1) / perRow;
             int columns = Math.min(plots, perRow);
-            var farthest = origin.north(rowDepth * lastRow).east(PLOT_WIDTH * (columns - 1));
+            var farthest = origin.north(rowDepth * lastRow).east(size.spacing() * (columns - 1));
             return BoundingBox.encapsulatingBoxes(List.of(plot(origin), plot(farthest))).orElseThrow();
         }
     }
@@ -178,6 +229,47 @@ public final class GalleryCheck {
     }
 
     /**
+     * Turns {@code modId}'s Gallery pack on and proves its {@code <modid>:gallery/clear} empties the
+     * first plot of a gallery laid out by {@code layout} from {@code origin}, relative to the test,
+     * as {@link #assertClears} does, onto a stone floor. Succeeds the test when it does. Like
+     * {@link #builds}, it turns the pack on, so the test is registered in a batch of its own.
+     */
+    public static void clears(GameTestHelper helper, String modId, BlockPos origin, Layout layout) {
+        clears(helper, modId, origin, layout, Blocks.STONE);
+    }
+
+    /** As {@link #clears(GameTestHelper, String, BlockPos, Layout)}, for a gallery whose plots stand on {@code floor}. */
+    public static void clears(GameTestHelper helper, String modId, BlockPos origin, Layout layout, Block floor) {
+        withPack(helper, modId, origin, layout, 1, (source, steps) -> steps.thenExecute(
+                () -> assertClears(helper, source, modId, layout.plot(helper.absolutePos(origin)), floor))).thenSucceed();
+    }
+
+    /**
+     * Asserts {@code <modid>:gallery/clear}, run as {@code source}, empties {@code plot}, absolute,
+     * the plot of a scene run from where {@code source} stands: with every block of it, its floor
+     * too, set to glass, which is neither a floor nor air and drops nothing when broken, the function runs without failing and leaves {@code floor}
+     * across the plot's bottom layer and air above it. A block left anywhere fails it, named with how
+     * many more there are.
+     */
+    public static void assertClears(GameTestHelper helper, CommandSourceStack source, String modId, BoundingBox plot, Block floor) {
+        var level = helper.getLevel();
+        BlockPos.betweenClosed(plot.minX(), plot.minY(), plot.minZ(), plot.maxX(), plot.maxY(), plot.maxZ())
+                .forEach(pos -> level.setBlock(pos, Blocks.GLASS.defaultBlockState(), Block.UPDATE_CLIENTS));
+        var clear = GalleryPack.clear(modId);
+        assertRuns(helper, source, clear);
+        var left = new ArrayList<String>();
+        for (var pos : BlockPos.betweenClosed(plot.minX(), plot.minY(), plot.minZ(), plot.maxX(), plot.maxY(), plot.maxZ())) {
+            var expected = pos.getY() == plot.minY() ? floor : Blocks.AIR;
+            var found = level.getBlockState(pos);
+            if (!found.is(expected)) {
+                left.add(found.getBlock() + " at " + pos.toShortString() + ", not " + expected);
+            }
+        }
+        helper.assertTrue(left.isEmpty(), clear + " left " + (left.isEmpty() ? "" : left.getFirst())
+                + (left.size() > 1 ? " and " + (left.size() - 1) + " more" : "") + " in its plot " + plot);
+    }
+
+    /**
      * Asserts the server offers {@code pack}, visible, and that it is off by default: neither required
      * nor added to a world on its own. It asks the pack, not whether it is on now, which a failed test
      * may have left it.
@@ -213,7 +305,7 @@ public final class GalleryCheck {
     public static void assertKeyBlocks(GameTestHelper helper, BlockPos origin, Layout layout, List<Scene> scenes) {
         for (int i = 0; i < scenes.size(); i++) {
             var scene = scenes.get(i);
-            helper.assertTrue(plot(BlockPos.ZERO).isInside(scene.key()),
+            helper.assertTrue(layout.plot(BlockPos.ZERO).isInside(scene.key()),
                     "scene " + scene.name() + "'s key " + scene.key().toShortString() + " is outside its plot");
             var pos = layout.sceneOrigin(origin, i).offset(scene.key());
             var found = helper.getLevel().getBlockState(pos);
@@ -245,10 +337,9 @@ public final class GalleryCheck {
         return Layout.ONE_ROW.sceneOrigin(origin, index);
     }
 
-    /** The plot of a scene run from {@code at}, its floor included. */
+    /** The {@link PlotSize#DEFAULT} plot of a scene run from {@code at}, its floor included. */
     public static BoundingBox plot(BlockPos at) {
-        return new BoundingBox(at.getX() + FIRST_PLOT_EAST, at.getY() - 1, at.getZ() - PLOT_DEPTH + 1,
-                at.getX() + FIRST_PLOT_EAST + PLOT_WIDTH - 1, at.getY() + PLOT_HEIGHT - 1, at.getZ());
+        return PlotSize.DEFAULT.at(at);
     }
 
     /** Every plot of a gallery of {@code scenes} run from {@code origin}, their floors included. */
