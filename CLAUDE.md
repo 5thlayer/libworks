@@ -55,6 +55,10 @@ A change a Consumer can use or will notice adds its line under `## Unreleased` i
 
 A release that must reach a Consumer in another checkout, a Module or a pack that pins the jar, follows the `release-train` skill: one owning session per checkout, and pushes only on the user's word.
 
+## Code navigation
+
+Find code through the ctags index `tags`, which gives a symbol's file and line, instead of opening files to look for it. Then read the whole method or type you found, or the whole file when it's under about 300 lines. Rebuild `tags` after adding, renaming or moving classes or methods. See `docs/agents/code-navigation.md`.
+
 ## Agent skills
 
 ### Issue tracker

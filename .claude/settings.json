@@ -20,6 +20,12 @@
             "command": "d=$(jq -r '.cwd // empty'); cd \"${d:-${CLAUDE_PROJECT_DIR:-.}}\" || exit 0; sh .claude/hooks/link-skills.sh",
             "timeout": 10,
             "statusMessage": "Linking the vendored skills"
+          },
+          {
+            "type": "command",
+            "command": "d=$(jq -r '.cwd // empty'); cd \"${d:-${CLAUDE_PROJECT_DIR:-.}}\" || exit 0; sh .claude/hooks/ctags.sh",
+            "timeout": 180,
+            "statusMessage": "Building the ctags symbol index"
           }
         ]
       }

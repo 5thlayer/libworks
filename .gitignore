@@ -6,3 +6,6 @@ logs/
 /.idea/
 .DS_Store
 __pycache__/
+
+# The ctags symbol index (docs/agents/code-navigation.md)
+/tags
