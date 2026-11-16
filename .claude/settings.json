@@ -11,18 +11,6 @@
           },
           {
             "type": "command",
-            "command": "d=$(jq -r '.cwd // empty'); cd \"${d:-${CLAUDE_PROJECT_DIR:-.}}\" || exit 0; if git submodule status 2>/dev/null | grep -q '^-'; then git submodule update --init --recursive -q && echo \"Initialized the git submodules: the vendored skills in .claude/skills now resolve.\"; fi; true",
-            "timeout": 120,
-            "statusMessage": "Initializing git submodules"
-          },
-          {
-            "type": "command",
-            "command": "d=$(jq -r '.cwd // empty'); cd \"${d:-${CLAUDE_PROJECT_DIR:-.}}\" || exit 0; sh .claude/hooks/link-skills.sh",
-            "timeout": 10,
-            "statusMessage": "Linking the vendored skills"
-          },
-          {
-            "type": "command",
             "command": "d=$(jq -r '.cwd // empty'); cd \"${d:-${CLAUDE_PROJECT_DIR:-.}}\" || exit 0; sh .claude/hooks/ctags.sh",
             "timeout": 180,
             "statusMessage": "Building the ctags symbol index"
@@ -30,5 +18,24 @@
         ]
       }
     ]
+  },
+  "extraKnownMarketplaces": {
+    "mattpocock": {
+      "source": {
+        "source": "github",
+        "repo": "mattpocock/skills"
+      },
+      "autoUpdate": true
+    },
+    "skillworks": {
+      "source": {
+        "source": "github",
+        "repo": "5thlayer/skillworks"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "mattpocock-skills@mattpocock": true,
+    "skillworks@skillworks": true
   }
 }
